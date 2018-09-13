@@ -417,7 +417,7 @@ function testHomeFolderAbbreviation() {
   cd ~/
   # default
   local POWERLEVEL9K_HOME_FOLDER_ABBREVIATION='~'
-  
+
   # Load Powerlevel9k
   source ${P9K_HOME}/powerlevel9k.zsh-theme
 
@@ -556,9 +556,7 @@ function testOmittingFirstCharacterWorksWithChangingPathSeparatorAndRightTruncat
 function testTruncateToUniqueWorks() {
   local -a POWERLEVEL9K_LEFT_PROMPT_ELEMENTS
   POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(dir)
-  local POWERLEVEL9K_DIR_OMIT_FIRST_CHARACTER=true
   local POWERLEVEL9K_DIR_PATH_SEPARATOR='xXx'
-  local POWERLEVEL9K_SHORTEN_DIR_LENGTH=2
   local POWERLEVEL9K_SHORTEN_STRATEGY='truncate_to_unique'
 
   # Load Powerlevel9k
@@ -566,13 +564,132 @@ function testTruncateToUniqueWorks() {
 
   mkdir -p /tmp/powerlevel9k-test/adam/devl
   mkdir -p /tmp/powerlevel9k-test/alice/devl
+  mkdir -p /tmp/powerlevel9k-test/alice/devl/ent
+  mkdir -p /tmp/powerlevel9k-test/alice/devl/ert
   mkdir -p /tmp/powerlevel9k-test/alice/docs
   mkdir -p /tmp/powerlevel9k-test/bob/docs
+
+  local POWERLEVEL9K_SHORTEN_DIR_LENGTH POWERLEVEL9K_DIR_OMIT_FIRST_CHARACTER
+
+  POWERLEVEL9K_SHORTEN_DIR_LENGTH=0
+  POWERLEVEL9K_DIR_OMIT_FIRST_CHARACTER=true
+  cd /
+  assertEquals "%K{004} %F{000}/ %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp
+  assertEquals "%K{004} %F{000}t %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp/powerlevel9k-test
+  assertEquals "%K{004} %F{000}txXxp %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp/powerlevel9k-test/alice
+  assertEquals "%K{004} %F{000}txXxpxXxal %k%F{004}%f " "$(build_left_prompt)"
   cd /tmp/powerlevel9k-test/alice/devl
-
   assertEquals "%K{004} %F{000}txXxpxXxalxXxde %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp/powerlevel9k-test/alice/devl/ert
+  assertEquals "%K{004} %F{000}txXxpxXxalxXxdexXxer %k%F{004}%f " "$(build_left_prompt)"
 
-  cd -
+  POWERLEVEL9K_DIR_OMIT_FIRST_CHARACTER=false
+  cd /
+  assertEquals "%K{004} %F{000}/ %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp
+  assertEquals "%K{004} %F{000}xXxt %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp/powerlevel9k-test
+  assertEquals "%K{004} %F{000}xXxtxXxp %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp/powerlevel9k-test/alice
+  assertEquals "%K{004} %F{000}xXxtxXxpxXxal %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp/powerlevel9k-test/alice/devl
+  assertEquals "%K{004} %F{000}xXxtxXxpxXxalxXxde %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp/powerlevel9k-test/alice/devl/ert
+  assertEquals "%K{004} %F{000}xXxtxXxpxXxalxXxdexXxer %k%F{004}%f " "$(build_left_prompt)"
+
+  POWERLEVEL9K_SHORTEN_DIR_LENGTH=2
+  POWERLEVEL9K_DIR_OMIT_FIRST_CHARACTER=true
+  cd /
+  assertEquals "%K{004} %F{000}/ %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp
+  assertEquals "%K{004} %F{000}tmp %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp/powerlevel9k-test
+  assertEquals "%K{004} %F{000}tmpxXxpowerlevel9k-test %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp/powerlevel9k-test/alice
+  assertEquals "%K{004} %F{000}txXxpowerlevel9k-testxXxalice %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp/powerlevel9k-test/alice/devl
+  assertEquals "%K{004} %F{000}txXxpxXxalicexXxdevl %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp/powerlevel9k-test/alice/devl/ert
+  assertEquals "%K{004} %F{000}txXxpxXxalxXxdevlxXxert %k%F{004}%f " "$(build_left_prompt)"
+
+  local POWERLEVEL9K_DIR_OMIT_FIRST_CHARACTER=false
+  cd /
+  assertEquals "%K{004} %F{000}/ %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp
+  assertEquals "%K{004} %F{000}xXxtmp %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp/powerlevel9k-test
+  assertEquals "%K{004} %F{000}xXxtmpxXxpowerlevel9k-test %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp/powerlevel9k-test/alice
+  assertEquals "%K{004} %F{000}xXxtxXxpowerlevel9k-testxXxalice %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp/powerlevel9k-test/alice/devl
+  assertEquals "%K{004} %F{000}xXxtxXxpxXxalicexXxdevl %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp/powerlevel9k-test/alice/devl/ert
+  assertEquals "%K{004} %F{000}xXxtxXxpxXxalxXxdevlxXxert %k%F{004}%f " "$(build_left_prompt)"
+
+  local HOME=/tmp/powerlevel9k-test
+  local POWERLEVEL9K_DIR_PATH_ABSOLUTE=false
+  POWERLEVEL9K_SHORTEN_DIR_LENGTH=0
+  POWERLEVEL9K_DIR_OMIT_FIRST_CHARACTER=true
+  cd /
+  assertEquals "%K{004} %F{000}/ %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp
+  assertEquals "%K{004} %F{000}t %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp/powerlevel9k-test
+  assertEquals "%K{004} %F{000}~ %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp/powerlevel9k-test/alice
+  assertEquals "%K{004} %F{000}xXxal %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp/powerlevel9k-test/alice/devl
+  assertEquals "%K{004} %F{000}xXxalxXxde %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp/powerlevel9k-test/alice/devl/ert
+  assertEquals "%K{004} %F{000}xXxalxXxdexXxer %k%F{004}%f " "$(build_left_prompt)"
+
+  POWERLEVEL9K_DIR_OMIT_FIRST_CHARACTER=false
+  cd /
+  assertEquals "%K{004} %F{000}/ %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp
+  assertEquals "%K{004} %F{000}xXxt %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp/powerlevel9k-test
+  assertEquals "%K{004} %F{000}~ %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp/powerlevel9k-test/alice
+  assertEquals "%K{004} %F{000}~xXxal %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp/powerlevel9k-test/alice/devl
+  assertEquals "%K{004} %F{000}~xXxalxXxde %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp/powerlevel9k-test/alice/devl/ert
+  assertEquals "%K{004} %F{000}~xXxalxXxdexXxer %k%F{004}%f " "$(build_left_prompt)"
+
+  POWERLEVEL9K_SHORTEN_DIR_LENGTH=2
+  POWERLEVEL9K_DIR_OMIT_FIRST_CHARACTER=true
+  cd /
+  assertEquals "%K{004} %F{000}/ %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp
+  assertEquals "%K{004} %F{000}tmp %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp/powerlevel9k-test
+  assertEquals "%K{004} %F{000}~ %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp/powerlevel9k-test/alice
+  assertEquals "%K{004} %F{000}xXxalice %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp/powerlevel9k-test/alice/devl
+  assertEquals "%K{004} %F{000}xXxalicexXxdevl %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp/powerlevel9k-test/alice/devl/ert
+  assertEquals "%K{004} %F{000}xXxalxXxdevlxXxert %k%F{004}%f " "$(build_left_prompt)"
+
+  local POWERLEVEL9K_DIR_OMIT_FIRST_CHARACTER=false
+  cd /
+  assertEquals "%K{004} %F{000}/ %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp
+  assertEquals "%K{004} %F{000}xXxtmp %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp/powerlevel9k-test
+  assertEquals "%K{004} %F{000}~ %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp/powerlevel9k-test/alice
+  assertEquals "%K{004} %F{000}~xXxalice %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp/powerlevel9k-test/alice/devl
+  assertEquals "%K{004} %F{000}~xXxalicexXxdevl %k%F{004}%f " "$(build_left_prompt)"
+  cd /tmp/powerlevel9k-test/alice/devl/ert
+  assertEquals "%K{004} %F{000}~xXxalxXxdevlxXxert %k%F{004}%f " "$(build_left_prompt)"
+
+  cd /tmp
   rm -fr /tmp/powerlevel9k-test
 }
 
