@@ -19,7 +19,7 @@ function getUniqueFolder() {
 
   paths=(${(s:/:)1})
   if [[ "$1" == "." ]]; then
-    return
+    return 0
   elif [[ "$1" == "~"* ]]; then
     # remove ~ from $paths and "move" $cur_paths to $HOME
     paths=(${paths[@]:1})
@@ -31,6 +31,7 @@ function getUniqueFolder() {
   fi
 
   for directory in ${paths[@]}; do
+    # finds out how many characters you need for the $directory to be unique
     test_dir=''
     for (( i=0; i < ${#directory}; i++ )); do
       test_dir+="${directory:$i:1}"
@@ -39,13 +40,13 @@ function getUniqueFolder() {
         break
       fi
     done
-    trunc_path+="$test_dir/"
-    cur_path+="$directory/"
+    trunc_path+="${test_dir}/"
+    cur_path+="${directory}/"
   done
 
-  [[ ${#trunc_path} == 1 ]] && \
-    echo "${trunc_path}" || \
-    echo "${trunc_path: : -1}"
+  [[ ${#trunc_path} == 1 ]] \
+    && echo "${trunc_path}" \
+    || echo "${trunc_path: : -1}"
 }
 
 ################################################################
@@ -114,14 +115,22 @@ prompt_dir() {
       truncate_to_unique)
         # for each parent path component find the shortest unique beginning
         # characters sequence. Source: https://stackoverflow.com/a/45336078
-        if (( ${#current_path} > 1 )); then # root and home are exceptions and won't have paths
-          local cwd="current_path"
-          # 12 for "current_path", 2 characters in ":h", $LEN for setable variable
-          local cwd="${(r#$((12+2*${POWERLEVEL9K_SHORTEN_DIR_LENGTH}))##:h#)cwd}"
-          # split paths and shorten left one (beware the /)
-          local left_path="${${(P)cwd}}"
-          local right_path="${current_path#${left_path}}"
+        # root and home are exceptions and won't have paths
+        if (( ${#current_path} > 1 )); then
+          local cwd left_path right_path
 
+          # use $cwd to store name of varibale $current_path that is to be evaluated
+          cwd="current_path"
+
+          # 12: string length of "current_path", 2: characters in ":h"
+          # Example: with $...DIR_LENTH=3 -> cwd="current_path:h:h:h"
+          cwd="${(r#$((12+2*${POWERLEVEL9K_SHORTEN_DIR_LENGTH}))##:h#)cwd}"
+
+          # evaluate $cwd to get the shortened version of $current_path
+          left_path="${${(P)cwd}}"
+          right_path="${current_path#${left_path}}"
+
+          # shorten $left_path and keep $right_path as it is to build $current_path
           current_path="$(getUniqueFolder ${left_path})${right_path}"
         fi
       ;;
