@@ -4,51 +4,6 @@
 # @source [powerlevel9k](https://github.com/bhilburn/powerlevel9k)
 ##
 
-################################################################
-# Determine the unique path for an absolute path
-# This is needed for the truncate_to_unique strategy.
-# Relative paths do not work and "." will be ignored
-# Parameters:
-#   * $1 Absolute Path: string - the directory path to be truncated
-#        can be either /... or ~/...
-# Known issues: characters that have to be escaped, i.e. " ", "*" ,etc.
-function __p9k_get_unique_path() {
-  local trunc_path directory test_dir cur_path
-  local -a matching
-  local -a paths
-
-  paths=(${(s:/:)1})
-  if [[ "$1" == "." ]]; then
-    return 0
-  elif [[ "$1" == "~"* ]]; then
-    # remove ~ from $paths and "move" $cur_paths to $HOME
-    paths=(${paths[@]:1})
-    cur_path="$HOME/"
-    trunc_path='~/'
-  else
-    cur_path='/'
-    trunc_path='/'
-  fi
-
-  for directory in ${paths[@]}; do
-    # finds out how many characters you need for the $directory to be unique
-    test_dir=''
-    for (( i=0; i < ${#directory}; i++ )); do
-      test_dir+="${directory:$i:1}"
-      matching=("$cur_path/$test_dir"*/)
-      if [[ ${#matching[@]} -eq 1 ]]; then
-        break
-      fi
-    done
-    trunc_path+="${test_dir}/"
-    cur_path+="${directory}/"
-  done
-
-  [[ ${#trunc_path} == 1 ]] \
-    && echo "${trunc_path}" \
-    || echo "${trunc_path: : -1}"
-}
-
 p9k::set_default P9K_DIR_PATH_HIGHLIGHT_BOLD false
 p9k::set_default P9K_DIR_PATH_SEPARATOR "/"
 p9k::set_default P9K_HOME_FOLDER_ABBREVIATION "~"

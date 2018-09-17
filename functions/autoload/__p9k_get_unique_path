@@ -1,0 +1,61 @@
+# vim:ft=zsh ts=2 sw=2 sts=2 et fenc=utf-8
+################################################################
+# @title powerlevel9k Autoload Function - __p9k_get_unique_path
+# @sources
+#   [powerlevel9k](https://github.com/bhilburn/powerlevel9k)
+##
+# @info
+#   This file contains the __p9k_get_unique_path autoload function for
+#   the powerlevel9k ZSH theme.
+##
+
+setopt localoptions # extendedglob
+
+################################################################
+# @description
+#   Given a directory path, determine the unique path.
+##
+# @args
+#   $1 string Absolute directory path to be truncated.
+##
+# @info
+#   Takes paths like /abs/dir/path or ~/abs/home/dir/path but
+#   not a relative path like ./dir/path or dir/path
+#   The path "." will be ignores.
+#   Does not work well with characters that have to be escaped, e.g. " ", "*"
+##
+# @function __p9k_get_unique_path() {}
+local trunc_path directory test_dir cur_path
+local -a matching
+local -a paths
+
+paths=(${(s:/:)1})
+if [[ "$1" == "." ]]; then
+  return 0
+elif [[ "$1" == "~"* ]]; then
+  # remove ~ from $paths and "move" $cur_paths to $HOME
+  paths=(${paths[@]:1})
+  cur_path="$HOME/"
+  trunc_path='~/'
+else
+  cur_path='/'
+  trunc_path='/'
+fi
+
+for directory in ${paths[@]}; do
+  # finds out how many characters you need for the $directory to be unique
+  test_dir=''
+  for (( i=0; i < ${#directory}; i++ )); do
+    test_dir+="${directory:$i:1}"
+    matching=("$cur_path/$test_dir"*/)
+    if [[ ${#matching[@]} -eq 1 ]]; then
+      break
+    fi
+  done
+  trunc_path+="${test_dir}/"
+  cur_path+="${directory}/"
+done
+
+[[ ${#trunc_path} == 1 ]] \
+  && echo "${trunc_path}" \
+  || echo "${trunc_path: : -1}"
