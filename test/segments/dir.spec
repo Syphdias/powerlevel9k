@@ -474,10 +474,11 @@ function testOmittingFirstCharacterWorksWithChangingPathSeparatorAndRightTruncat
 function testTruncateToUniqueWorks() {
   typeset -a P9K_LEFT_PROMPT_ELEMENTS
   P9K_LEFT_PROMPT_ELEMENTS=(dir)
-  local P9K_DIR_OMIT_FIRST_CHARACTER=true
+  local P9K_DIR_OMIT_FIRST_CHARACTER=false
   local P9K_DIR_PATH_SEPARATOR='xXx'
   local P9K_DIR_SHORTEN_STRATEGY='truncate_to_unique'
   local P9K_DIR_SHORTEN_LENGTH P9K_DIR_PATH_ABSOLUTE HOME
+  local staring_point="${PWD}"
 
   mkdir -p /tmp/powerlevel9k-test/adam/devl
   mkdir -p /tmp/powerlevel9k-test/alice/devl/ent
@@ -487,18 +488,9 @@ function testTruncateToUniqueWorks() {
 
   # get unique name for tmp folder - on macOS, this is /private/tmp
   cd /tmp/powerlevel9k-test
-  local test_path=${$(__p9k_get_unique_path $PWD:A)//\//$P9K_DIR_PATH_SEPARATOR}
-  echo
-  echo $test_path
+  local test_path_short=${$(__p9k_get_unique_path $PWD:A)//\//$P9K_DIR_PATH_SEPARATOR}
+  local test_path_long=${${PWD:A}//\//$P9K_DIR_PATH_SEPARATOR}
   cd -
-
-
-
-  # if [[ "${PWD:A}" == "/tmp" ]]; then
-  # elif [[ "${PWD:A}" == "/private/tmp" ]]; then
-  # else
-  #   echo "directory is not /tmp" && exit 1
-  # fi
 
   HOME="/tmp/powerlevel9k-test/alice"
   P9K_DIR_SHORTEN_LENGTH=0
@@ -506,9 +498,9 @@ function testTruncateToUniqueWorks() {
   cd /
   assertEquals "%K{004} %F{000}/ %k%F{004}%f " "$(__p9k_build_left_prompt)"
   cd /tmp/powerlevel9k-test/alice # $HOME
-  assertEquals "%K{004} %F{000}${test_path}xXxal %k%F{004}%f " "$(__p9k_build_left_prompt)"
+  assertEquals "%K{004} %F{000}${test_path_short}xXxal %k%F{004}%f " "$(__p9k_build_left_prompt)"
   cd /tmp/powerlevel9k-test/alice/devl/ert
-  assertEquals "%K{004} %F{000}${test_path}xXxalxXxdexXxer %k%F{004}%f " "$(__p9k_build_left_prompt)"
+  assertEquals "%K{004} %F{000}${test_path_short}xXxalxXxdexXxer %k%F{004}%f " "$(__p9k_build_left_prompt)"
 
   P9K_DIR_PATH_ABSOLUTE=false
   cd /
@@ -516,16 +508,16 @@ function testTruncateToUniqueWorks() {
   cd /tmp/powerlevel9k-test/alice # $HOME
   assertEquals "%K{004} %F{000}~ %k%F{004}%f " "$(__p9k_build_left_prompt)"
   cd /tmp/powerlevel9k-test/alice/devl/ert
-  assertEquals "%K{004} %F{000}~xXxalxXxdexXxer %k%F{004}%f " "$(__p9k_build_left_prompt)"
+  assertEquals "%K{004} %F{000}~xXxdexXxer %k%F{004}%f " "$(__p9k_build_left_prompt)"
 
   P9K_DIR_SHORTEN_LENGTH=3
   P9K_DIR_PATH_ABSOLUTE=true
   cd /
   assertEquals "%K{004} %F{000}/ %k%F{004}%f " "$(__p9k_build_left_prompt)"
   cd /tmp/powerlevel9k-test/alice # $HOME
-  assertEquals "%K{004} %F{000}~ %k%F{004}%f " "$(__p9k_build_left_prompt)"
+  assertEquals "%K{004} %F{000}${test_path_long}xXxalice %k%F{004}%f " "$(__p9k_build_left_prompt)"
   cd /tmp/powerlevel9k-test/alice/devl/ert
-  assertEquals "%K{004} %F{000}${test_path}xXxalxXxdevlxXxert %k%F{004}%f " "$(__p9k_build_left_prompt)"
+  assertEquals "%K{004} %F{000}${test_path_short}xXxalicexXxdevlxXxert %k%F{004}%f " "$(__p9k_build_left_prompt)"
 
   P9K_DIR_PATH_ABSOLUTE=false
   cd /
@@ -539,13 +531,13 @@ function testTruncateToUniqueWorks() {
   P9K_DIR_SHORTEN_LENGTH=3
   P9K_DIR_PATH_ABSOLUTE=true
   cd /tmp/powerlevel9k-test/alice/devl/ert
-  assertEquals "%K{004} %F{000}${test_path}xXxpxXxalicexXxdevlxXxert %k%F{004}%f " "$(__p9k_build_left_prompt)"
+  assertEquals "%K{004} %F{000}${test_path_short}xXxalicexXxdevlxXxert %k%F{004}%f " "$(__p9k_build_left_prompt)"
 
   P9K_DIR_PATH_ABSOLUTE=false
   cd /tmp/powerlevel9k-test/alice/devl/ert
   assertEquals "%K{004} %F{000}~xXxalicexXxdevlxXxert %k%F{004}%f " "$(__p9k_build_left_prompt)"
 
-  cd /tmp
+  cd "${staring_point}"
   rm -fr /tmp/powerlevel9k-test
 }
 
