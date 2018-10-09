@@ -76,18 +76,18 @@ prompt_dir() {
           local cwd left_path right_path
 
           if [[ "$(zsh --version)" != *" 5.1"* ]]; then
-            # use $cwd to store name of varibale $current_path that is to be evaluated
+            # use $cwd to store name of variable $current_path that is to be evaluated
             cwd="current_path"
 
             # 12: string length of "current_path", 2: characters in ":h"
-            # Example: with $...DIR_LENTH=3 -> cwd="current_path:h:h:h"
-            cwd="${(r#$((12+2*${P9K_SHORTEN_DIR_LENGTH}))##:h#)cwd}"
+            # E.g.: with $P9K_DIR_SHORTEN_LENGTH=3 -> cwd="current_path:h:h:h"
+            cwd="${(r#$((12+2*${P9K_DIR_SHORTEN_LENGTH}))##:h#)cwd}"
 
             # evaluate $cwd to get the shortened version of $current_path
             left_path="${${(P)cwd}}"
           else
             left_path="${current_path}"
-            for (( i=0; i<${P9K_SHORTEN_DIR_LENGTH}; i++ )); do
+            for (( i=0; i<${P9K_DIR_SHORTEN_LENGTH}; i++ )); do
               left_path="${left_path:h}"
             done
           fi

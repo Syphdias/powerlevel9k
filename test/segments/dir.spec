@@ -554,140 +554,81 @@ function testOmittingFirstCharacterWorksWithChangingPathSeparatorAndRightTruncat
 }
 
 function testTruncateToUniqueWorks() {
-  local -a P9K_LEFT_PROMPT_ELEMENTS
+  typeset -a P9K_LEFT_PROMPT_ELEMENTS
   P9K_LEFT_PROMPT_ELEMENTS=(dir)
+  local P9K_DIR_OMIT_FIRST_CHARACTER=true
   local P9K_DIR_PATH_SEPARATOR='xXx'
-  local P9K_SHORTEN_STRATEGY='truncate_to_unique'
+  local P9K_DIR_SHORTEN_STRATEGY='truncate_to_unique'
+  local P9K_DIR_SHORTEN_LENGTH P9K_DIR_PATH_ABSOLUTE HOME
 
   # Load Powerlevel9k
   source ${P9K_HOME}/powerlevel9k.zsh-theme
 
   mkdir -p /tmp/powerlevel9k-test/adam/devl
-  mkdir -p /tmp/powerlevel9k-test/alice/devl
   mkdir -p /tmp/powerlevel9k-test/alice/devl/ent
   mkdir -p /tmp/powerlevel9k-test/alice/devl/ert
   mkdir -p /tmp/powerlevel9k-test/alice/docs
   mkdir -p /tmp/powerlevel9k-test/bob/docs
 
-  local P9K_SHORTEN_DIR_LENGTH P9K_DIR_OMIT_FIRST_CHARACTER
+  # get unique name for tmp folder - on macOS, this is /private/tmp
+  cd /tmp/powerlevel9k-test
+  local test_path=${$(__p9k_get_unique_path $PWD:A)//\//$P9K_DIR_PATH_SEPARATOR}
+  cd -
 
-  P9K_SHORTEN_DIR_LENGTH=0
-  P9K_DIR_OMIT_FIRST_CHARACTER=true
+
+
+  # if [[ "${PWD:A}" == "/tmp" ]]; then
+  # elif [[ "${PWD:A}" == "/private/tmp" ]]; then
+  # else
+  #   echo "directory is not /tmp" && exit 1
+  # fi
+
+  HOME="/tmp/powerlevel9k-test/alice"
+  P9K_DIR_SHORTEN_LENGTH=0
+  P9K_DIR_PATH_ABSOLUTE=true
   cd /
   assertEquals "%K{004} %F{000}/ %k%F{004}%f " "$(__p9k_build_left_prompt)"
-  cd /tmp
-  assertEquals "%K{004} %F{000}t %k%F{004}%f " "$(__p9k_build_left_prompt)"
-  cd /tmp/powerlevel9k-test
-  assertEquals "%K{004} %F{000}txXxp %k%F{004}%f " "$(__p9k_build_left_prompt)"
-  cd /tmp/powerlevel9k-test/alice
-  assertEquals "%K{004} %F{000}txXxpxXxal %k%F{004}%f " "$(__p9k_build_left_prompt)"
-  cd /tmp/powerlevel9k-test/alice/devl
-  assertEquals "%K{004} %F{000}txXxpxXxalxXxde %k%F{004}%f " "$(__p9k_build_left_prompt)"
+  cd /tmp/powerlevel9k-test/alice # $HOME
+  assertEquals "%K{004} %F{000}${test_path}xXxal %k%F{004}%f " "$(__p9k_build_left_prompt)"
+  echo $test_path
+  exit 0
   cd /tmp/powerlevel9k-test/alice/devl/ert
-  assertEquals "%K{004} %F{000}txXxpxXxalxXxdexXxer %k%F{004}%f " "$(__p9k_build_left_prompt)"
+  assertEquals "%K{004} %F{000}${test_path}xXxalxXxdexXxer %k%F{004}%f " "$(__p9k_build_left_prompt)"
 
-  P9K_DIR_OMIT_FIRST_CHARACTER=false
+  P9K_DIR_PATH_ABSOLUTE=false
   cd /
   assertEquals "%K{004} %F{000}/ %k%F{004}%f " "$(__p9k_build_left_prompt)"
-  cd /tmp
-  assertEquals "%K{004} %F{000}xXxt %k%F{004}%f " "$(__p9k_build_left_prompt)"
-  cd /tmp/powerlevel9k-test
-  assertEquals "%K{004} %F{000}xXxtxXxp %k%F{004}%f " "$(__p9k_build_left_prompt)"
-  cd /tmp/powerlevel9k-test/alice
-  assertEquals "%K{004} %F{000}xXxtxXxpxXxal %k%F{004}%f " "$(__p9k_build_left_prompt)"
-  cd /tmp/powerlevel9k-test/alice/devl
-  assertEquals "%K{004} %F{000}xXxtxXxpxXxalxXxde %k%F{004}%f " "$(__p9k_build_left_prompt)"
-  cd /tmp/powerlevel9k-test/alice/devl/ert
-  assertEquals "%K{004} %F{000}xXxtxXxpxXxalxXxdexXxer %k%F{004}%f " "$(__p9k_build_left_prompt)"
-
-  P9K_SHORTEN_DIR_LENGTH=2
-  P9K_DIR_OMIT_FIRST_CHARACTER=true
-  cd /
-  assertEquals "%K{004} %F{000}/ %k%F{004}%f " "$(__p9k_build_left_prompt)"
-  cd /tmp
-  assertEquals "%K{004} %F{000}tmp %k%F{004}%f " "$(__p9k_build_left_prompt)"
-  cd /tmp/powerlevel9k-test
-  assertEquals "%K{004} %F{000}tmpxXxpowerlevel9k-test %k%F{004}%f " "$(__p9k_build_left_prompt)"
-  cd /tmp/powerlevel9k-test/alice
-  assertEquals "%K{004} %F{000}txXxpowerlevel9k-testxXxalice %k%F{004}%f " "$(__p9k_build_left_prompt)"
-  cd /tmp/powerlevel9k-test/alice/devl
-  assertEquals "%K{004} %F{000}txXxpxXxalicexXxdevl %k%F{004}%f " "$(__p9k_build_left_prompt)"
-  cd /tmp/powerlevel9k-test/alice/devl/ert
-  assertEquals "%K{004} %F{000}txXxpxXxalxXxdevlxXxert %k%F{004}%f " "$(__p9k_build_left_prompt)"
-
-  local P9K_DIR_OMIT_FIRST_CHARACTER=false
-  cd /
-  assertEquals "%K{004} %F{000}/ %k%F{004}%f " "$(__p9k_build_left_prompt)"
-  cd /tmp
-  assertEquals "%K{004} %F{000}xXxtmp %k%F{004}%f " "$(__p9k_build_left_prompt)"
-  cd /tmp/powerlevel9k-test
-  assertEquals "%K{004} %F{000}xXxtmpxXxpowerlevel9k-test %k%F{004}%f " "$(__p9k_build_left_prompt)"
-  cd /tmp/powerlevel9k-test/alice
-  assertEquals "%K{004} %F{000}xXxtxXxpowerlevel9k-testxXxalice %k%F{004}%f " "$(__p9k_build_left_prompt)"
-  cd /tmp/powerlevel9k-test/alice/devl
-  assertEquals "%K{004} %F{000}xXxtxXxpxXxalicexXxdevl %k%F{004}%f " "$(__p9k_build_left_prompt)"
-  cd /tmp/powerlevel9k-test/alice/devl/ert
-  assertEquals "%K{004} %F{000}xXxtxXxpxXxalxXxdevlxXxert %k%F{004}%f " "$(__p9k_build_left_prompt)"
-
-  local HOME=/tmp/powerlevel9k-test
-  local P9K_DIR_PATH_ABSOLUTE=false
-  P9K_SHORTEN_DIR_LENGTH=0
-  P9K_DIR_OMIT_FIRST_CHARACTER=true
-  cd /
-  assertEquals "%K{004} %F{000}/ %k%F{004}%f " "$(__p9k_build_left_prompt)"
-  cd /tmp
-  assertEquals "%K{004} %F{000}t %k%F{004}%f " "$(__p9k_build_left_prompt)"
-  cd /tmp/powerlevel9k-test
+  cd /tmp/powerlevel9k-test/alice # $HOME
   assertEquals "%K{004} %F{000}~ %k%F{004}%f " "$(__p9k_build_left_prompt)"
-  cd /tmp/powerlevel9k-test/alice
-  assertEquals "%K{004} %F{000}xXxal %k%F{004}%f " "$(__p9k_build_left_prompt)"
-  cd /tmp/powerlevel9k-test/alice/devl
-  assertEquals "%K{004} %F{000}xXxalxXxde %k%F{004}%f " "$(__p9k_build_left_prompt)"
-  cd /tmp/powerlevel9k-test/alice/devl/ert
-  assertEquals "%K{004} %F{000}xXxalxXxdexXxer %k%F{004}%f " "$(__p9k_build_left_prompt)"
-
-  P9K_DIR_OMIT_FIRST_CHARACTER=false
-  cd /
-  assertEquals "%K{004} %F{000}/ %k%F{004}%f " "$(__p9k_build_left_prompt)"
-  cd /tmp
-  assertEquals "%K{004} %F{000}xXxt %k%F{004}%f " "$(__p9k_build_left_prompt)"
-  cd /tmp/powerlevel9k-test
-  assertEquals "%K{004} %F{000}~ %k%F{004}%f " "$(__p9k_build_left_prompt)"
-  cd /tmp/powerlevel9k-test/alice
-  assertEquals "%K{004} %F{000}~xXxal %k%F{004}%f " "$(__p9k_build_left_prompt)"
-  cd /tmp/powerlevel9k-test/alice/devl
-  assertEquals "%K{004} %F{000}~xXxalxXxde %k%F{004}%f " "$(__p9k_build_left_prompt)"
   cd /tmp/powerlevel9k-test/alice/devl/ert
   assertEquals "%K{004} %F{000}~xXxalxXxdexXxer %k%F{004}%f " "$(__p9k_build_left_prompt)"
 
-  P9K_SHORTEN_DIR_LENGTH=2
-  P9K_DIR_OMIT_FIRST_CHARACTER=true
+  P9K_DIR_SHORTEN_LENGTH=3
+  P9K_DIR_PATH_ABSOLUTE=true
   cd /
   assertEquals "%K{004} %F{000}/ %k%F{004}%f " "$(__p9k_build_left_prompt)"
-  cd /tmp
-  assertEquals "%K{004} %F{000}tmp %k%F{004}%f " "$(__p9k_build_left_prompt)"
-  cd /tmp/powerlevel9k-test
+  cd /tmp/powerlevel9k-test/alice # $HOME
   assertEquals "%K{004} %F{000}~ %k%F{004}%f " "$(__p9k_build_left_prompt)"
-  cd /tmp/powerlevel9k-test/alice
-  assertEquals "%K{004} %F{000}xXxalice %k%F{004}%f " "$(__p9k_build_left_prompt)"
-  cd /tmp/powerlevel9k-test/alice/devl
-  assertEquals "%K{004} %F{000}xXxalicexXxdevl %k%F{004}%f " "$(__p9k_build_left_prompt)"
   cd /tmp/powerlevel9k-test/alice/devl/ert
-  assertEquals "%K{004} %F{000}xXxalxXxdevlxXxert %k%F{004}%f " "$(__p9k_build_left_prompt)"
+  assertEquals "%K{004} %F{000}${test_path}xXxalxXxdevlxXxert %k%F{004}%f " "$(__p9k_build_left_prompt)"
 
-  local P9K_DIR_OMIT_FIRST_CHARACTER=false
+  P9K_DIR_PATH_ABSOLUTE=false
   cd /
   assertEquals "%K{004} %F{000}/ %k%F{004}%f " "$(__p9k_build_left_prompt)"
-  cd /tmp
-  assertEquals "%K{004} %F{000}xXxtmp %k%F{004}%f " "$(__p9k_build_left_prompt)"
-  cd /tmp/powerlevel9k-test
+  cd /tmp/powerlevel9k-test/alice # $HOME
   assertEquals "%K{004} %F{000}~ %k%F{004}%f " "$(__p9k_build_left_prompt)"
-  cd /tmp/powerlevel9k-test/alice
-  assertEquals "%K{004} %F{000}~xXxalice %k%F{004}%f " "$(__p9k_build_left_prompt)"
-  cd /tmp/powerlevel9k-test/alice/devl
-  assertEquals "%K{004} %F{000}~xXxalicexXxdevl %k%F{004}%f " "$(__p9k_build_left_prompt)"
   cd /tmp/powerlevel9k-test/alice/devl/ert
-  assertEquals "%K{004} %F{000}~xXxalxXxdevlxXxert %k%F{004}%f " "$(__p9k_build_left_prompt)"
+  assertEquals "%K{004} %F{000}~xXxdevlxXxert %k%F{004}%f " "$(__p9k_build_left_prompt)"
+
+  HOME=/tmp/powerlevel9k-test
+  P9K_DIR_SHORTEN_LENGTH=3
+  P9K_DIR_PATH_ABSOLUTE=true
+  cd /tmp/powerlevel9k-test/alice/devl/ert
+  assertEquals "%K{004} %F{000}${test_path}xXxpxXxalicexXxdevlxXxert %k%F{004}%f " "$(__p9k_build_left_prompt)"
+
+  P9K_DIR_PATH_ABSOLUTE=false
+  cd /tmp/powerlevel9k-test/alice/devl/ert
+  assertEquals "%K{004} %F{000}~xXxalicexXxdevlxXxert %k%F{004}%f " "$(__p9k_build_left_prompt)"
 
   cd /tmp
   rm -fr /tmp/powerlevel9k-test
