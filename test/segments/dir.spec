@@ -488,8 +488,8 @@ function testTruncateToUniqueWorks() {
 
   # get unique name for tmp folder - on macOS, this is /private/tmp
   cd /tmp/powerlevel9k-test
-  local test_path_short=${$(__p9k_get_unique_path $PWD:A)//\//$P9K_DIR_PATH_SEPARATOR}
-  local test_path_long=${${PWD:A}//\//$P9K_DIR_PATH_SEPARATOR}
+  local test_path_short=${$(__p9k_get_unique_path $PWD:a)//\//$P9K_DIR_PATH_SEPARATOR}
+  local test_path_long=${${PWD:a}//\//$P9K_DIR_PATH_SEPARATOR}
   cd -
 
   HOME="/tmp/powerlevel9k-test/alice"
