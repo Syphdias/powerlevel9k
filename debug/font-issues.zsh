@@ -1,9 +1,9 @@
 #!/usr/bin/env zsh
 #vim:ft=zsh ts=2 sw=2 sts=2 et fenc=utf-8
 
+source functions/utilities.zsh
 source functions/colors.zsh
 source functions/icons.zsh
-source functions/utilities.zsh
 # Map our $__P9K_OS to neofetch $os
 os="$__P9K_OS"
 
@@ -118,13 +118,13 @@ get_term_font() {
 
     case "$term" in
         "alacritty"*)
-            shopt -s nullglob
+            setopt nullglob
             confs=({$XDG_CONFIG_HOME,$HOME}/{alacritty,}/{.,}alacritty.ym?)
-            shopt -u nullglob
+            unsetopt nullglob
 
-            [[ -f "${confs[0]}" ]] || return
+            [[ -f "${confs[1]}" ]] || return
 
-            term_font="$(awk -F ':|#' '/normal:/ {getline; print}' "${confs[0]}")"
+            term_font="$(awk -F ':|#' '/normal:/ {getline; print}' "${confs[1]}")"
             term_font="${term_font/*family:}"
             term_font="${term_font/$'\n'*}"
             term_font="${term_font/\#*}"
@@ -201,11 +201,11 @@ END
         ;;
 
         "kitty"*)
-            shopt -s nullglob
-            confs=({$KITTY_CONFIG_DIRECTORY,$XDG_CONFIG_HOME,~/Library/Preferences}/kitty/kitty.con?)
-            shopt -u nullglob
+            setopt nullglob
+            confs=({$KITTY_CONFIG_DIRECTORY,$XDG_CONFIG_HOME,~/Library/Preferences,~/.config}/kitty/kitty.con?)
+            unsetopt nullglob
 
-            [[ -f "${confs[0]}" ]] || return
+            [[ -f "${confs[1]}" ]] || return
 
             term_font="$(awk '/^([[:space:]]*|[^#_])font_family[[:space:]]+/ {
                                   $1 = "";
@@ -215,7 +215,7 @@ END
                               /^([[:space:]]*|[^#_])font_size[[:space:]]+/ {
                                   size = $2
                               }
-                              END { print font " " size}' "${confs[0]}")"
+                              END { print font " " size}' "${confs[1]}")"
         ;;
 
         "konsole"*)
