@@ -21,18 +21,18 @@ setopt localoptions # extendedglob
 # @info
 #   Takes paths like /abs/dir/path or ~/abs/home/dir/path but
 #   not a relative path like ./dir/path or dir/path
-#   The path "." will be ignores.
-#   Does not work well with characters that have to be escaped, e.g. " ", "*"
+#   The path "." will be ignored.
 ##
 # @function __p9k_get_unique_path() {}
-local trunc_path directory test_dir cur_path
-local -a matching
+local full_path cur_path trunc_path directory test_dir
 local -a paths
+local -a matching
 
-paths=(${(s:/:)1})
-if [[ "$1" == "." ]]; then
+full_path="$1"
+paths=(${(s:/:)full_path})
+if [[ "${full_path}" == "." ]]; then
   return 0
-elif [[ "$1" == "~"* ]]; then
+elif [[ "${full_path}" == "~"* ]]; then
   # remove ~ from $paths and "move" $cur_paths to $HOME
   paths=(${paths[@]:1})
   cur_path="$HOME/"
@@ -42,15 +42,14 @@ else
   trunc_path='/'
 fi
 
-for directory in ${paths[@]}; do
+for directory in ${paths}; do
   # finds out how many characters you need for the $directory to be unique
   test_dir=''
+  matching=("$cur_path"*/)
   for (( i=0; i < ${#directory}; i++ )); do
     test_dir+="${directory:$i:1}"
-    matching=("$cur_path/$test_dir"*/)
-    if [[ ${#matching[@]} -eq 1 ]]; then
-      break
-    fi
+    [[ ${(M)#matching:#${cur_path}${test_dir}*} -eq 1 ]] \
+      && break
   done
   trunc_path+="${test_dir}/"
   cur_path+="${directory}/"
