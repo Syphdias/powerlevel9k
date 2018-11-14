@@ -42,6 +42,8 @@ else
   trunc_path='/'
 fi
 
+# for each parent path component find the shortest unique beginning
+# characters sequence. Source: https://stackoverflow.com/a/45336078
 for directory in ${paths}; do
   # finds out how many characters you need for the $directory to be unique
   test_dir=''

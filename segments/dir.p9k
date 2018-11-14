@@ -91,17 +91,14 @@ prompt_dir() {
         fi
       ;;
       truncate_to_unique)
-        # root and home are exceptions and won't have paths
-        if (( ${#current_path} > 1 )); then
-          local left_path="${current_path}"
-          for (( i=0; i<${P9K_DIR_SHORTEN_LENGTH}; i++ )); do
-            left_path="${left_path:h}"
-          done
-          local right_path="${current_path#${left_path}}"
+        local left_path="${current_path}"
+        for (( i=0; i<${P9K_DIR_SHORTEN_LENGTH}; i++ )); do
+          left_path="${left_path:h}"
+        done
+        local right_path="${current_path#${left_path}}"
 
-          # shorten $left_path and keep $right_path as it is to build $current_path
-          current_path="$(__p9k_get_unique_path ${left_path})${right_path}"
-        fi
+        # shorten $left_path and keep $right_path as it is to build $current_path
+        current_path="$(__p9k_get_unique_path ${left_path})${right_path}"
       ;;
       truncate_with_folder_marker)
         if (( ${#paths} > 0 )); then # root and home are exceptions and won't have paths, so skip this
