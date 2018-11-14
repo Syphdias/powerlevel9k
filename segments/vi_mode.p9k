@@ -7,15 +7,17 @@
 ################################################################
 # Register segment
 # Parameters:
-#   segment_name  context  foreground  background  Generic  Flat/Awesome-Patched  Awesome-FontConfig  Awesome-Mapped-FontConfig  NerdFont
+#   segment_name  context  background  foreground  Generic  Flat/Awesome-Patched  Awesome-FontConfig  Awesome-Mapped-FontConfig  NerdFont
 p9k::register_segment  "VI_MODE" "NORMAL" "${DEFAULT_COLOR}" "white"  ''  ''  ''  ''  ''
 p9k::register_segment  "VI_MODE" "INSERT" "${DEFAULT_COLOR}" "blue"   ''  ''  ''  ''  ''
+p9k::register_segment  "VI_MODE" "SEARCH" "${DEFAULT_COLOR}" "purple" ''  ''  ''  ''  ''
 p9k::register_segment  "VI_MODE" "VISUAL" "${DEFAULT_COLOR}" "orange" ''  ''  ''  ''  ''
 
 ################################################################
 # Register segment default values
 p9k::set_default P9K_VI_MODE_NORMAL_STRING 'NORMAL'
 p9k::set_default P9K_VI_MODE_INSERT_STRING 'INSERT'
+p9k::set_default P9K_VI_MODE_SEARCH_STRING 'SEARCH'
 p9k::set_default P9K_VI_MODE_VISUAL_STRING 'VISUAL'
 
 ###############################################################
@@ -40,19 +42,21 @@ p9k::set_default P9K_VI_MODE_VISUAL_STRING 'VISUAL'
 #   [zsh-vimode-visual](https://github.com/b4b4r07/zsh-vimode-visual)
 ##
 prompt_vi_mode() {
-  local vi_mode
   local current_state
   typeset -gAH vi_states
-  case "${KEYMAP}" in
+  case "${VIM_MODE_KEYMAP:-$KEYMAP}" in
     vicmd)        current_state="NORMAL" ;;
     vivis)        current_state="VISUAL" ;;
+    isearch)      current_state="SEARCH" ;;
     main|viins|*) current_state="INSERT" ;;
   esac
-  vi_mode="P9K_VI_MODE_${current_state}_STRING"
+
+  local vi_mode="P9K_VI_MODE_${current_state}_STRING"
+  local vi_mode_string="${(P)vi_mode}"
   # NOTE: The display test at the end of the next line ensures that the segment_state is displayed if an icon is defined
   #       even if the string is set to an empty string. This allows you to define and use icons for this segment instead
   #       of the default text string and also bypasses the ugly icon as content string. As a bonus, you can set both!
-  p9k::prepare_segment "$0" "${current_state}" $1 "$2" $3 "${(P)vi_mode}" "[[ '$__P9K_ICONS[VI_MODE_${current_state}]' != '' || '${(P)vi_mode}' != '' ]]"
+  p9k::prepare_segment "$0" "${current_state}" $1 "$2" $3 "${vi_mode_string}" "[[ '$__P9K_ICONS[VI_MODE_${current_state}]' != '' || '${vi_mode_string}' != '' ]]"
 }
 
 ###############################################################
@@ -63,10 +67,22 @@ function rebuild_vi_mode {
         printf '%s' ${terminfo[smkx]}
       fi
       local current_state
-      case "${KEYMAP}" in
-        vicmd)        current_state="NORMAL" ;;
-        vivis)        current_state="VISUAL" ;;
-        main|viins|*) current_state="INSERT" ;;
+      case "${VIM_MODE_KEYMAP:-$KEYMAP}" in
+        vicmd)
+          [[ -z "${P9K_VI_MODE_NORMAL_STRING}" ]] && return
+          current_state="NORMAL"
+          ;;
+        vivis)
+          current_state="VISUAL"
+          ;;
+        isearch)
+          [[ -z "${P9K_VI_MODE_SEARCH_STRING}" ]] && return
+          current_state="SEARCH"
+          ;;
+        main|viins|*)
+          [[ -z "${P9K_VI_MODE_INSERT_STRING}" ]] && return
+          current_state="INSERT"
+          ;;
       esac
       local element joined=false
       local vi_mode="P9K_VI_${current_state}_MODE_STRING"
@@ -165,15 +181,16 @@ cursorShape() {
 function zle-line-init {
   case $P9K_GENERATOR in
     zsh-async)
-      rebuild_vi_mode "${KEYMAP}"
+      rebuild_vi_mode "${VIM_MODE_KEYMAP:-$KEYMAP}"
     ;;
   esac
   # change cursor shape
   if [[ $P9K_CURSOR_SHAPE ]]; then
-    case ${KEYMAP} in
+    case "${VIM_MODE_KEYMAP:-$KEYMAP}" in
       vicmd)      cursorShape ${P9K_CURSOR_SHAPE_NORMAL};;
       viins|main) cursorShape ${P9K_CURSOR_SHAPE_INSERT};;
       vivis)      cursorShape ${P9K_CURSOR_SHAPE_VISUAL};;
+      isearch)    cursorShape ${P9K_CURSOR_SHAPE_SEARCH};;
       *)          cursorShape ${P9K_CURSOR_SHAPE_DEFAULT};;
     esac
   fi
@@ -181,7 +198,7 @@ function zle-line-init {
 
 ###############################################################
 function zle-line-finish {
-  #rebuild_vi_mode "${KEYMAP}"
+  #rebuild_vi_mode "${VIM_MODE_KEYMAP:-$KEYMAP}"
   if [[ $P9K_CURSOR_SHAPE ]]; then
     cursorShape ${P9K_CURSOR_SHAPE_DEFAULT}
   fi
@@ -191,7 +208,7 @@ function zle-line-finish {
 function zle-keymap-select {
   case $P9K_GENERATOR in
     zsh-async)
-      rebuild_vi_mode "${KEYMAP}"
+      rebuild_vi_mode "${VIM_MODE_KEYMAP:-$KEYMAP}"
     ;;
     *)
       # About .reset-prompt see:
@@ -203,10 +220,11 @@ function zle-keymap-select {
   esac
   # change cursor shape
   if [[ $P9K_CURSOR_SHAPE ]]; then
-    case ${KEYMAP} in
+    case "${VIM_MODE_KEYMAP:-$KEYMAP}" in
       vicmd)      cursorShape ${P9K_CURSOR_SHAPE_NORMAL};;
       viins|main) cursorShape ${P9K_CURSOR_SHAPE_INSERT};;
       vivis)      cursorShape ${P9K_CURSOR_SHAPE_VISUAL};;
+      isearch)    cursorShape ${P9K_CURSOR_SHAPE_SEARCH};;
       *)          cursorShape ${P9K_CURSOR_SHAPE_DEFAULT};;
     esac
   fi

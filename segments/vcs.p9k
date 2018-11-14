@@ -84,11 +84,15 @@ p9k::register_icon "VCS_TAG"               ''          $'\uE817 '  $'\uF217 '  '
 p9k::register_icon "VCS_BOOKMARK"          $'\u263F'   $'\uE87B'   $'\uF27B'   '\u'${CODEPOINT_OF_OCTICONS_BOOKMARK}             $'\uF461 '
 #                                                                                                                             
 p9k::register_icon "VCS_COMMIT"            ''          $'\uE821 '  $'\uF221 '  '\u'${CODEPOINT_OF_OCTICONS_GIT_COMMIT}' '        $'\uE729 '
+#                                                                                                                             
+p9k::register_icon "VCS_CLOBBERED_FOLDER"  ''          $'\uE818'   $'\uF115'   '\u'${CODEPOINT_OF_AWESOME_FOLDER_O}              $'\uF115'
+#                                          ✘           ✘           ✘                                                             
+p9k::register_icon "VCS_ERROR"             $'\u2718'   $'\u2718'   $'\u2718'   '\u'${CODEPOINT_OF_AWESOME_TIMES}                 $'\uF00D'
 
 # Hide branch icon if user wants it hidden
 if [[ "${P9K_VCS_HIDE_BRANCH_ICON}" != true ]]; then
   if [[ ${P9K_MODE} != 'compatible' ]]; then
-    #                                                                                                                        
+    #                                                                                                                         
     p9k::register_icon "VCS_BRANCH"        $'\uE0A0 '  $'\uE220 '  $'\uF126 '  '\u'${CODEPOINT_OF_OCTICONS_GIT_BRANCH}' '        $'\uF126 '
   else
     #                                                                                                                         
@@ -96,7 +100,7 @@ if [[ "${P9K_VCS_HIDE_BRANCH_ICON}" != true ]]; then
   fi
 fi
 
-#                                          →           →           →                                                            
+#                                          →           →          →                                                            
 p9k::register_icon "VCS_REMOTE_BRANCH"     $'\u2192'   $'\u2192'   $'\u2192'   '\u'${CODEPOINT_OF_OCTICONS_REPO_PUSH}            $'\uE728 '
 #                                                                                                                             
 p9k::register_icon "VCS_GIT"               ''          $'\uE20E '  $'\uF1D3 '  '\u'${CODEPOINT_OF_AWESOME_GIT}' '                $'\uF1D3 '
@@ -121,19 +125,33 @@ p9k::set_default P9K_VCS_SHOW_SUBMODULE_DIRTY true
 
 ################################################################
 # Register segment helper default values
-p9k::set_default P9K_VCS_SHOW_SUBMODULE_DIRTY true
+p9k::set_default P9K_VCS_SHOW_SUBMODULE_DIRTY false
+p9k::set_default P9K_VCS_GIT_ALWAYS_SHOW_REMOTE_BRANCH false
 
 function +vi-git-untracked() {
-  # TODO: check git >= 1.7.2 - see function git_compare_version()
-  local FLAGS
-  FLAGS=('--porcelain')
+  [[ -z "${vcs_comm[gitdir]}" || "${vcs_comm[gitdir]}" == "." ]] && return
 
-  if [[ "$P9K_VCS_SHOW_SUBMODULE_DIRTY" == "false" ]]; then
-    FLAGS+='--ignore-submodules=dirty'
-  fi
+  # If we are in a .git folder, do not check for untracked files.
+  [[ "${PWD:A}" =~ "\.git/" ]] && return
 
-  if [[ $(command git rev-parse --is-inside-work-tree 2> /dev/null) == 'true' && \
-      -n $(command git status ${FLAGS} | \grep -E '^\?\?' 2> /dev/null | tail -n1) ]]; then
+  # If we are in a repos root folder, vcs_comm[gitdir] yields ".git".
+  # Inside the .git dir itself (and not a subdir of it) the variable
+  # yields ".". In any other case (either a subdirectory of .git or
+  # the repo itself), the value of vcs_comm[gitdir] is the absolute
+  # path to the .git directory.
+  # Therefore we can step up a directory, if we are inside the .git
+  # folder. And in any other case, use the parent directory of the
+  # gitdir.
+  local repoDir="."
+  # Getting the parent dir of the current dir "." is still ".", so
+  # is is safe to do this always.
+  [[ "${vcs_comm[gitdir]}" != ".git" ]] && repoDir="${vcs_comm[gitdir]:A:h}"
+  [[ "${vcs_comm[gitdir]}" == "." ]] && repoDir="${PWD:A:h}"
+
+  if [[ "$P9K_VCS_SHOW_SUBMODULE_DIRTY" == "true" && "$(command git submodule foreach --quiet --recursive 'command git ls-files --others --exclude-standard')" != "" ]]; then
+    hook_com[unstaged]+=" ${__P9K_ICONS[VCS_UNTRACKED]}"
+    VCS_WORKDIR_HALF_DIRTY=true
+  elif [[ "$(command git ls-files --others --exclude-standard "${repoDir}")" != "" ]]; then
     hook_com[unstaged]+=" ${__P9K_ICONS[VCS_UNTRACKED]}"
     VCS_WORKDIR_HALF_DIRTY=true
   else
@@ -142,41 +160,39 @@ function +vi-git-untracked() {
 }
 
 function +vi-git-aheadbehind() {
-  local ahead behind branch_name
+  local ahead behind
   local -a gitstatus
 
-  branch_name=$(command git symbolic-ref --short HEAD 2>/dev/null)
-
   # for git prior to 1.7
-  # ahead=$(command git rev-list origin/${branch_name}..HEAD | wc -l)
-  ahead=$(command git rev-list "${branch_name}"@{upstream}..HEAD 2>/dev/null | wc -l)
+  # ahead=$(command git rev-list origin/${hook_com[branch]}..HEAD | wc -l)
+  ahead=$(command git rev-list --count "${hook_com[branch]}"@{upstream}..HEAD 2>/dev/null)
   (( ahead )) && gitstatus+=( " ${__P9K_ICONS[VCS_OUTGOING_CHANGES]}${ahead// /}" )
 
   # for git prior to 1.7
-  # behind=$(command git rev-list HEAD..origin/${branch_name} | wc -l)
-  behind=$(command git rev-list HEAD.."${branch_name}"@{upstream} 2>/dev/null | wc -l)
+  # behind=$(command git rev-list HEAD..origin/${hook_com[branch]} | wc -l)
+  behind=$(command git rev-list --count HEAD.."${hook_com[branch]}"@{upstream} 2>/dev/null)
   (( behind )) && gitstatus+=( " ${__P9K_ICONS[VCS_INCOMING_CHANGES]}${behind// /}" )
 
   hook_com[misc]+=${(j::)gitstatus}
 }
 
 function +vi-git-remotebranch() {
-  local remote branch_name
+  local remote
+  local branch_name="${hook_com[branch]}"
 
   # Are we on a remote-tracking branch?
   remote=${$(command git rev-parse --verify HEAD@{upstream} --symbolic-full-name 2>/dev/null)/refs\/(remotes|heads)\/}
-  branch_name=$(command git symbolic-ref --short HEAD 2>/dev/null)
 
   if [[ -n "$P9K_VCS_SHORTEN_LENGTH" ]] && [[ -n "$P9K_VCS_SHORTEN_MIN_LENGTH" ]]; then
     p9k::set_default P9K_VCS_SHORTEN_DELIMITER $'\u2026'
 
-    if [ ${#hook_com[branch]} -gt $P9K_VCS_SHORTEN_MIN_LENGTH ] && [ ${#hook_com[branch]} -gt $P9K_VCS_SHORTEN_LENGTH ]; then
+    if [ ${#hook_com[branch]} -gt ${P9K_VCS_SHORTEN_MIN_LENGTH} ] && [ ${#hook_com[branch]} -gt ${P9K_VCS_SHORTEN_LENGTH} ]; then
       case "$P9K_VCS_SHORTEN_STRATEGY" in
         truncate_middle)
-          hook_com[branch]="$(echo "${branch_name:0:$P9K_VCS_SHORTEN_LENGTH}")$P9K_VCS_SHORTEN_DELIMITER$(echo "${branch_name: -$P9K_VCS_SHORTEN_LENGTH}")"
+          hook_com[branch]="${branch_name:0:$P9K_VCS_SHORTEN_LENGTH}${P9K_VCS_SHORTEN_DELIMITER}${branch_name: -$P9K_VCS_SHORTEN_LENGTH}"
         ;;
         truncate_from_right)
-          hook_com[branch]="$(echo "${branch_name:0:$P9K_VCS_SHORTEN_LENGTH}")$P9K_VCS_SHORTEN_DELIMITER"
+          hook_com[branch]="${branch_name:0:$P9K_VCS_SHORTEN_LENGTH}${P9K_VCS_SHORTEN_DELIMITER}"
         ;;
       esac
     fi
@@ -186,9 +202,36 @@ function +vi-git-remotebranch() {
   # Always show the remote
   #if [[ -n ${remote} ]] ; then
   # Only show the remote if it differs from the local
-  if [[ -n ${remote} ]] && [[ "${remote#*/}" != "${branch_name#heads/}" ]] ; then
+  if [[ -n ${remote} \
+      && ( \
+        "${P9K_VCS_GIT_ALWAYS_SHOW_REMOTE_BRANCH}" == 'true' \
+        || "${remote#*/}" != "${branch_name#heads/}" \
+      ) ]]; then
     hook_com[branch]+="${__P9K_ICONS[VCS_REMOTE_BRANCH]}${remote// /}"
   fi
+}
+
+function +vi-git-gitdir() {
+    if (( $+GIT_DIR )); then
+        local gitdir="$GIT_DIR"
+        local icon="${__P9K_ICONS[VCS_CLOBBERED_FOLDER]}"
+
+        local inner
+        () {
+            # See if current working directory is a shadowed repository
+            local GIT_DIR GIT_WORK_TREE
+            inner=$(command git rev-parse --verify HEAD 2> /dev/null)
+        }
+
+        if [[ -n $inner && $inner != "$(command git rev-parse --verify HEAD 2> /dev/null)" ]]; then
+            # GIT_DIR is shadowing a different repo. This can be
+            # very confusing! Flag to alert.
+            VCS_WORKDIR_CLOBBERED=true
+            icon="${__P9K_ICONS[VCS_ERROR]} $icon"
+        fi
+
+        hook_com[branch]="$icon $gitdir ${hook_com[branch]}"
+    fi
 }
 
 p9k::set_default P9K_VCS_HIDE_TAGS false
@@ -220,11 +263,9 @@ function +vi-git-tagname() {
 # Show count of stashed changes
 # Port from https://github.com/whiteinge/dotfiles/blob/5dfd08d30f7f2749cfc60bc55564c6ea239624d9/.zsh_shouse_prompt#L268
 function +vi-git-stash() {
-  local -a stashes
-
-  if [[ -s $(command git rev-parse --git-dir)/refs/stash ]] ; then
-    stashes=$(command git stash list 2>/dev/null | wc -l)
-    hook_com[misc]+=" ${__P9K_ICONS[VCS_STASH]}${stashes// /}"
+  if [[ -s "${vcs_comm[gitdir]}/logs/refs/stash" ]] ; then
+    local -a stashes=( "${(@f)"$(<${vcs_comm[gitdir]}/logs/refs/stash)"}" )
+    hook_com[misc]+=" ${__P9K_ICONS[VCS_STASH]}${#stashes}"
   fi
 }
 
@@ -269,19 +310,21 @@ function +vi-vcs-detect-changes() {
 }
 
 function +vi-svn-detect-changes() {
-  local svn_status="$(svn status)"
-  if [[ -n "$(echo "$svn_status" | \grep \^\?)" ]]; then
+  declare -a svn_status
+  svn_status=( "${(@f)$(svn status)}" )
+  if [[ "${(M)#svn_status:#\?*}" -gt 0 ]]; then
     hook_com[unstaged]+=" ${__P9K_ICONS[VCS_UNTRACKED]}"
     VCS_WORKDIR_HALF_DIRTY=true
   fi
-  if [[ -n "$(echo "$svn_status" | \grep \^\M)" ]]; then
+  if [[ "${(M)#svn_status:#M*}" -gt 0 ]]; then
     hook_com[unstaged]+=" ${__P9K_ICONS[VCS_UNSTAGED]}"
     VCS_WORKDIR_DIRTY=true
   fi
-  if [[ -n "$(echo "$svn_status" | \grep \^\A)" ]]; then
+  if [[ "${(M)#svn_status:#A*}" -gt 0 ]]; then
     hook_com[staged]+=" ${__P9K_ICONS[VCS_STAGED]}"
     VCS_WORKDIR_DIRTY=true
   fi
+  unset svn_status
 }
 
 ################################################################
@@ -309,6 +352,10 @@ __p9k_vcs_init() {
     VCS_CHANGESET_PREFIX="${__P9K_ICONS[VCS_COMMIT]}%0.${P9K_VCS_INTERNAL_HASH_LENGTH}i "
   fi
 
+  # Show number of applied patches. This is used during merges and rebases
+  # %c number of unapplied patches | %n number of applied patched | %a number of all patches
+  zstyle ':vcs_info:*' patch-format ' %n/%a'
+
   # Load supported version control backends
   zstyle ':vcs_info:*' enable git hg svn
 
@@ -320,7 +367,7 @@ __p9k_vcs_init() {
   zstyle ':vcs_info:*' formats "${VCS_DEFAULT_FORMAT}"
 
   # A list of formats, used if there is a special action going on in your current repository; like an interactive rebase or a merge conflict.
-  zstyle ':vcs_info:*' actionformats "%b $(p9k::foreground_color ${P9K_VCS_ACTIONFORMAT_FOREGROUND})| %a%f"
+  zstyle ':vcs_info:*' actionformats "%b $(p9k::foreground_color ${P9K_VCS_ACTIONFORMAT_FOREGROUND})| %a%m%f"
 
   # This string will be used in the %c escape if there are staged changes in the repository.
   zstyle ':vcs_info:*' stagedstr " ${__P9K_ICONS[VCS_STAGED]}"
@@ -331,7 +378,7 @@ __p9k_vcs_init() {
   # Hooks are places in vcs_info where you can run your own code. That code can communicate with the code that called it and through that, change the system’s behaviour.
   # For configuration, hooks change the style context:
   #   :vcs_info:vcs-string+hook-name:user-context:repo-root-name
-  p9k::defined P9K_VCS_GIT_HOOKS || P9K_VCS_GIT_HOOKS=(vcs-detect-changes git-untracked git-aheadbehind git-stash git-remotebranch git-tagname)
+  p9k::defined P9K_VCS_GIT_HOOKS || P9K_VCS_GIT_HOOKS=(vcs-detect-changes git-untracked git-aheadbehind git-stash git-remotebranch git-gitdir git-tagname)
   zstyle ':vcs_info:git*+set-message:*' hooks ${P9K_VCS_GIT_HOOKS}
   p9k::defined P9K_VCS_HG_HOOKS || P9K_VCS_HG_HOOKS=(vcs-detect-changes)
   zstyle ':vcs_info:hg*+set-message:*' hooks ${P9K_VCS_HG_HOOKS}
@@ -368,11 +415,12 @@ __p9k_vcs_init() {
 ################################################################
 # Register segment
 # Parameters:
-#   segment_name  context  foreground  background  Generic  Flat/Awesome-Patched  Awesome-FontConfig  Awesome-Mapped-FontConfig  NerdFont
+#   segment_name  context  background  foreground  Generic  Flat/Awesome-Patched  Awesome-FontConfig  Awesome-Mapped-FontConfig  NerdFont
 p9k::register_segment  "VCS" "CLEAN"     "green"  "${DEFAULT_COLOR}" ''  ''  ''  ''  ''
 p9k::register_segment  "VCS" "MODIFIED"  "yellow" "${DEFAULT_COLOR}" ''  ''  ''  ''  ''
 #                                                                                                                                     
 p9k::register_segment  "VCS" "UNTRACKED" "green"  "${DEFAULT_COLOR}" '?' $'\uE16C' $'\uF059' '\u'${CODEPOINT_OF_AWESOME_QUESTION_CIRCLE} $'\uF059'
+p9k::register_segment  "VCS" "CLOBBERED" "red"    "${DEFAULT_COLOR}" ''  ''  ''  ''  ''
 
 ################################################################
 # @description
@@ -385,6 +433,7 @@ p9k::register_segment  "VCS" "UNTRACKED" "green"  "${DEFAULT_COLOR}" '?' $'\uE16
 ##
 prompt_vcs() {
   [[ ${P9K_GENERATOR} == "zsh-async" && -n ${4} ]] && cd ${4}
+  VCS_WORKDIR_CLOBBERED=false
   VCS_WORKDIR_DIRTY=false
   VCS_WORKDIR_HALF_DIRTY=false
   local current_state=""
@@ -394,7 +443,9 @@ prompt_vcs() {
   local vcs_prompt="${vcs_info_msg_0_}"
 
   if [[ -n "${vcs_prompt}" ]]; then
-    if [[ "${VCS_WORKDIR_DIRTY}" == true ]]; then
+    if [[ "${VCS_WORKDIR_CLOBBERED}" == true ]]; then
+      current_state='clobbered'
+    elif [[ "${VCS_WORKDIR_DIRTY}" == true ]]; then
       current_state='modified'
     else
       if [[ "${VCS_WORKDIR_HALF_DIRTY}" == true ]]; then

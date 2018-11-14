@@ -138,6 +138,8 @@ The segments that are currently available are:
     * `swift_version` - Show the version number of the installed Swift.
 * **Java Segments:**
     * `java_version` - Show the current Java version.
+* **Haskell Segments:**
+    * `stack_project` - Show if you are in a Haskell Stack project directory.
 
 **Cloud Segments:**
 * **AWS Segments:**
@@ -215,7 +217,7 @@ without affecting the icon color.
 
 You can also change the battery icon automatically depending on the battery
 level. This will override the default battery icon. In order to do this, you
-need to define the `POWERLEVEL9k_BATTERY_STAGES` variable.
+need to define the `P9k_BATTERY_STAGES` variable.
 
 
 | Variable                      | Default Value | Description                                                   |
@@ -464,13 +466,14 @@ You can also color the separator separately by setting the color using `P9K_DIR_
 
 ##### disk_usage
 
-The `disk_usage` segment will show the usage level of the partition that your current working directory resides in. It can be configured with the following variables.
+The `disk_usage` segment will show the usage level of the partition that your current working directory (or a directory of your choice) resides in. It can be configured with the following variables.
 
 | Variable | Default Value | Description |
 |----------|---------------|-------------|
 |P9K_DISK_USAGE_ONLY_WARNING|false|Hide the segment except when usage levels have hit warning or critical levels.|
 |P9K_DISK_USAGE_WARNING_LEVEL|90|The usage level that triggers a warning state.|
 |P9K_DISK_USAGE_CRITICAL_LEVEL|95|The usage level that triggers a critical state.|
+|P9K_DISK_USAGE_PATH|`.` (working directory)|Set a path to use a fixed directory instead of the working 
 
 ##### host
 
@@ -659,10 +662,11 @@ customization is provided via:
 |`P9K_VCS_CHANGESET_HASH_LENGTH`|`12`|How many characters of the hash / changeset to display in the segment.|
 |`P9K_VCS_SHOW_SUBMODULE_DIRTY`|`true`|Set to `false` to not reflect submodule status in the top-level repository prompt.|
 |`P9K_VCS_HIDE_TAGS`|`false`|Set to `true` to stop tags being displayed in the segment.|
-|`P9K_VCS_GIT_HOOKS`|`(vcs-detect-changes git-untracked git-aheadbehind git-stash git-remotebranch git-tagname)`|Layout of the segment for git repositories.|
+|`P9K_VCS_GIT_HOOKS`|`(vcs-detect-changes git-untracked git-aheadbehind git-stash git-remotebranch git-gitdir git-tagname)`|Layout of the segment for git repositories.|
 |`P9K_VCS_HG_HOOKS`|`(vcs-detect-changes)`|Layout of the segment for Mercurial repositories.|
 |`P9K_VCS_SVN_HOOKS`|`(vcs-detect-changes svn-detect-changes)`|Layout of the segment for SVN repositories.|
 |`P9K_VCS_ACTIONFORMAT_FOREGROUND`|`red`|The color of the foreground font during actions (e.g., `REBASE`).|
+|`P9K_VCS_GIT_ALWAYS_SHOW_REMOTE_BRANCH`|`false`|Set to true If you would to always see the remote branch.|
 
 
 ##### vcs symbols
@@ -722,6 +726,7 @@ you are using the [ZSH Line Editor](http://zsh.sourceforge.net/Doc/Release/Zsh-L
 |----------|---------------|-------------|
 |`P9K_VI_MODE_INSERT_STRING`|`"INSERT"`|String to display while in 'Insert' mode.|
 |`P9K_VI_MODE_COMMAND_STRING`|`"NORMAL"`|String to display while in 'Command' mode.|
+|`P9K_VI_MODE_SEARCH_STRING`|`"SEARCH"`|String to display while in 'Search' mode (requires the [vim-mode](https://github.com/softmoth/zsh-vim-mode) plugin).|
 
 To hide the segment entirely when in `INSERT` mode, set `P9K_VI_MODE_INSERT_STRING=''`
 

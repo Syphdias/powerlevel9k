@@ -261,7 +261,7 @@ function testActionHintWorks() {
   git commit -a -m "Provoke conflict" &>/dev/null
   git pull &>/dev/null
 
-  assertEquals "%K{003} %F{000} master %F{001}| merge%f %k%F{003}%f " "$(__p9k_build_left_prompt)"
+  assertEquals "%K{003} %F{000} master %F{001}| merge 1/1 ↑1 ↓1%f %k%F{003}%f " "$(__p9k_build_left_prompt)"
 }
 
 function testIncomingHintWorks() {
@@ -416,24 +416,201 @@ function testRemoteBranchNameIdenticalToTag() {
   P9K_LEFT_PROMPT_ELEMENTS=(vcs)
 
   echo "test" > test.txt
-  git add test.txt
-  git commit -m "Initial commit"
+  git add test.txt 1>/dev/null
+  git commit -m "Initial commit" 1>/dev/null
 
   # Prepare a tag named "test"
-  git tag test
+  git tag test 1>/dev/null
 
   # Prepare branch named "test"
-  git checkout -b test
+  git checkout -b test 1>/dev/null 2>&1
 
   # Clone Repo
-  git clone . ../vcs-test2
+  git clone . ../vcs-test2 1>/dev/null 2>&1
   cd ../vcs-test2
 
-  git checkout test
+  git checkout test 1>/dev/null 2>&1
 
   assertEquals "%K{002} %F{000} test test %k%F{002}%f " "$(__p9k_build_left_prompt)"
 
   cd -
+}
+
+function testAlwaysShowRemoteBranch() {
+  P9K_LEFT_PROMPT_ELEMENTS=(vcs)
+  local P9K_VCS_GIT_ALWAYS_SHOW_REMOTE_BRANCH='true'
+  local P9K_VCS_HIDE_TAGS='true'
+
+  echo "test" > test.txt
+  git add . 1>/dev/null
+  git commit -m "Initial Commit" 1>/dev/null
+
+  git clone . ../vcs-test2 1>/dev/null 2>&1
+  cd ../vcs-test2
+
+  assertEquals "%K{002} %F{000} master→origin/master %k%F{002}%f " "$(__p9k_build_left_prompt)"
+
+  local P9K_VCS_GIT_ALWAYS_SHOW_REMOTE_BRANCH='false'
+  assertEquals "%K{002} %F{000} master %k%F{002}%f " "$(__p9k_build_left_prompt)"
+
+  cd -
+}
+
+function testGitDirClobber() {
+  P9K_LEFT_PROMPT_ELEMENTS=(vcs)
+  local P9K_VCS_GIT_ALWAYS_SHOW_REMOTE_BRANCH='true'
+  local P9K_VCS_HIDE_TAGS='true'
+
+  echo "xxx" > xxx.txt
+  git add . 1>/dev/null
+  git commit -m "Initial Commit" 1>/dev/null
+
+  cd ..
+
+  git clone --bare vcs-test test-dotfiles 1>/dev/null 2>&1
+
+  # Create completely independent git repo in a sub directory.
+  mkdir vcs-test2
+  cd vcs-test2
+  git init 1>/dev/null
+  echo "yyy" > yyy.txt
+  git add . 1>/dev/null
+  git commit -m "Initial Commit" 1>/dev/null
+
+  cd ..
+
+  export GIT_DIR="${PWD}/test-dotfiles" GIT_WORK_TREE="${PWD}"
+
+  # CD into the second dir that is below the git work tree,
+  # so for git this is a repo inside another repo.
+  cd vcs-test2
+
+  assertEquals "%K{001} %F{000}✘  /tmp/powerlevel9k-test/test-dotfiles  master ✚ ? %k%F{001}%f " "$(__p9k_build_left_prompt)"
+
+  cd -
+  unset GIT_DIR
+  unset GIT_WORK_TREE
+}
+
+function testDetectingUntrackedFilesInSubmodulesWork() {
+  local -a P9K_LEFT_PROMPT_ELEMENTS
+  P9K_LEFT_PROMPT_ELEMENTS=(vcs)
+  local P9K_VCS_SHOW_SUBMODULE_DIRTY="true"
+  unset P9K_VCS_UNTRACKED_BACKGROUND
+
+  mkdir ../submodule
+  cd ../submodule
+  git init 1>/dev/null
+  touch "i-am-tracked.txt"
+  git add . 1>/dev/null && git commit -m "Initial Commit" 1>/dev/null
+
+  local submodulePath="${PWD}"
+
+  cd -
+  git submodule add "${submodulePath}" 2>/dev/null
+  git commit -m "Add submodule" 1>/dev/null
+
+  # Go into checked-out submodule path
+  cd submodule
+  # Create untracked file
+  touch "i-am-untracked.txt"
+  cd -
+
+  source ${P9K_HOME}/powerlevel9k.zsh-theme
+
+  assertEquals "%K{002} %F{000}? %f%F{000} master ? %k%F{002}%f " "$(__p9k_build_left_prompt)"
+}
+
+function testDetectinUntrackedFilesInMainRepoWithDirtySubmodulesWork() {
+  local -a P9K_LEFT_PROMPT_ELEMENTS
+  P9K_LEFT_PROMPT_ELEMENTS=(vcs)
+  local P9K_VCS_SHOW_SUBMODULE_DIRTY="true"
+  unset P9K_VCS_UNTRACKED_BACKGROUND
+
+  mkdir ../submodule
+  cd ../submodule
+  git init 1>/dev/null
+  touch "i-am-tracked.txt"
+  git add . 1>/dev/null && git commit -m "Initial Commit" 1>/dev/null
+
+  local submodulePath="${PWD}"
+
+  cd -
+  git submodule add "${submodulePath}" 2>/dev/null
+  git commit -m "Add submodule" 1>/dev/null
+
+  # Create untracked file
+  touch "i-am-untracked.txt"
+
+  source ${P9K_HOME}/powerlevel9k.zsh-theme
+
+  assertEquals "%K{002} %F{000}? %f%F{000} master ? %k%F{002}%f " "$(__p9k_build_left_prompt)"
+}
+
+function testDetectingUntrackedFilesInNestedSubmodulesWork() {
+  local -a P9K_LEFT_PROMPT_ELEMENTS
+  P9K_LEFT_PROMPT_ELEMENTS=(vcs)
+  local P9K_VCS_SHOW_SUBMODULE_DIRTY="true"
+  unset P9K_VCS_UNTRACKED_BACKGROUND
+
+  local mainRepo="${PWD}"
+
+  mkdir ../submodule
+  cd ../submodule
+  git init 1>/dev/null
+  touch "i-am-tracked.txt"
+  git add . 1>/dev/null && git commit -m "Initial Commit" 1>/dev/null
+
+  local submodulePath="${PWD}"
+
+  mkdir ../subsubmodule
+  cd ../subsubmodule
+  git init 1>/dev/null
+  touch "i-am-tracked-too.txt"
+  git add . 1>/dev/null && git commit -m "Initial Commit" 1>/dev/null
+
+  local subsubmodulePath="${PWD}"
+
+  cd "${submodulePath}"
+  git submodule add "${subsubmodulePath}" 2>/dev/null
+  git commit -m "Add subsubmodule" 1>/dev/null
+  cd "${mainRepo}"
+  git submodule add "${submodulePath}" 2>/dev/null
+  git commit -m "Add submodule" 1>/dev/null
+
+  git submodule update --init --recursive 2>/dev/null
+
+  cd submodule/subsubmodule
+  # Create untracked file
+  touch "i-am-untracked.txt"
+  cd -
+
+  source ${P9K_HOME}/powerlevel9k.zsh-theme
+
+  assertEquals "%K{002} %F{000}? %f%F{000} master ? %k%F{002}%f " "$(__p9k_build_left_prompt)"
+}
+
+function testDetectingUntrackedFilesInCleanSubdirectoryWorks() {
+  local -a P9K_LEFT_PROMPT_ELEMENTS
+  P9K_LEFT_PROMPT_ELEMENTS=(vcs)
+  local P9K_VCS_SHOW_SUBMODULE_DIRTY="true"
+  unset P9K_VCS_UNTRACKED_BACKGROUND
+
+  mkdir clean-folder
+  touch clean-folder/file.txt
+
+  mkdir dirty-folder
+  touch dirty-folder/file.txt
+
+  git add . 2>/dev/null
+  git commit -m "Initial commit" >/dev/null
+
+  touch dirty-folder/new-file.txt
+  cd clean-folder
+
+  source ${P9K_HOME}/powerlevel9k.zsh-theme
+
+  assertEquals "%K{002} %F{000}? %f%F{000} master ? %k%F{002}%f " "$(__p9k_build_left_prompt)"
 }
 
 source shunit2/shunit2
