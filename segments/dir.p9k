@@ -51,7 +51,12 @@ prompt_dir() {
   # if we are not in "~" or "/", split the paths into an array and exclude "~"
   (( ${#current_path} > 1 )) && paths=(${(s:/:)${current_path//"~\/"/}}) || paths=()
   # only run the code if SHORTEN_DIR_LENGTH is set, or we are using the two strategies that don't rely on it.
-  if (( ${#current_path} > 1 )) && [[ -n "$P9K_DIR_SHORTEN_LENGTH" || "$P9K_DIR_SHORTEN_STRATEGY" == "truncate_with_folder_marker" || "$P9K_DIR_SHORTEN_STRATEGY" == "truncate_to_last" ]]; then
+  if [[ ${#current_path} > 1 \
+        && ( -n "$P9K_DIR_SHORTEN_LENGTH" \
+            || "$P9K_DIR_SHORTEN_STRATEGY" == "truncate_with_folder_marker" \
+            || "$P9K_DIR_SHORTEN_STRATEGY" == "truncate_to_unique" \
+            || "$P9K_DIR_SHORTEN_STRATEGY" == "truncate_to_last" )
+      ]]; then
     case "$P9K_DIR_SHORTEN_STRATEGY" in
       truncate_from_right)
         # truncate characters from the right of the path
@@ -92,7 +97,7 @@ prompt_dir() {
       ;;
       truncate_to_unique)
         local left_path="${current_path}"
-        for (( i=0; i<${P9K_DIR_SHORTEN_LENGTH}; i++ )); do
+        for (( i=0; i<${P9K_DIR_SHORTEN_LENGTH:-1}; i++ )); do
           left_path="${left_path:h}"
         done
         local right_path="${current_path#${left_path}}"
