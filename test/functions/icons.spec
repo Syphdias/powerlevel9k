@@ -6,70 +6,103 @@ setopt shwordsplit
 SHUNIT_PARENT=$0
 
 function setUp() {
-    # Store old value for LC_CTYPE
-    _OLD_LC_CTYPE="${LC_CTYPE}"
-    # Reset actual LC_CTYPE
-    unset LC_CTYPE
-
-    # Store old P9K mode
-    _OLD_P9K_MODE="${P9K_MODE}"
     source functions/utilities.zsh
 }
 
-function tearDown() {
-    # Restore LC_CTYPE
-    LC_CTYPE="${_OLD_LC_CTYPE}"
+function testLcCtypeIsNotOverwrittenInDefaultMode() {
+  local P9K_MODE="default"
+  local LC_CTYPE="my-locale"
+  local __P9K_DIRECTORY="${PWD}"
+  source functions/colors.zsh
 
-    # Restore old P9K mode
-    P9K_MODE="${_OLD_P9K_MODE}"
-}
-
-function testLcCtypeIsSetCorrectlyInDefaultMode() {
-  P9K_MODE="default"
   # Load Powerlevel9k
   source functions/icons.zsh
 
-  assertEquals 'en_US.UTF-8' "${LC_CTYPE}"
+  for segment in segments/*.p9k; do
+    source "${segment}"
+  done
+
+  assertEquals 'my-locale' "${LC_CTYPE}"
 }
 
-function testLcCtypeIsSetCorrectlyInAwesomePatchedMode() {
-  P9K_MODE="awesome-patched"
+function testLcCtypeIsNotOverwrittenInAwesomePatchedMode() {
+  local P9K_MODE="awesome-patched"
+  local LC_CTYPE="my-locale"
+  local __P9K_DIRECTORY="${PWD}"
+  source functions/colors.zsh
+
   # Load Powerlevel9k
   source functions/icons.zsh
 
-  assertEquals 'en_US.UTF-8' "${LC_CTYPE}"
+  for segment in segments/*.p9k; do
+    source "${segment}"
+  done
+
+  assertEquals 'my-locale' "${LC_CTYPE}"
 }
 
-function testLcCtypeIsSetCorrectlyInAwesomeFontconfigMode() {
-  P9K_MODE="awesome-fontconfig"
+function testLcCtypeIsNotOverwrittenInAwesomeFontconfigMode() {
+  local P9K_MODE="awesome-fontconfig"
+  local LC_CTYPE="my-locale"
+  local __P9K_DIRECTORY="${PWD}"
+  source functions/colors.zsh
+
   # Load Powerlevel9k
   source functions/icons.zsh
 
-  assertEquals 'en_US.UTF-8' "${LC_CTYPE}"
+  for segment in segments/*.p9k; do
+    source "${segment}"
+  done
+
+  assertEquals 'my-locale' "${LC_CTYPE}"
 }
 
-function testLcCtypeIsSetCorrectlyInNerdfontFontconfigMode() {
-  P9K_MODE="nerdfont-fontconfig"
+function testLcCtypeIsNotOverwrittenInNerdfontFontconfigMode() {
+  local P9K_MODE="nerdfont-fontconfig"
+  local LC_CTYPE="my-locale"
+  local __P9K_DIRECTORY="${PWD}"
+  source functions/colors.zsh
+
   # Load Powerlevel9k
   source functions/icons.zsh
 
-  assertEquals 'en_US.UTF-8' "${LC_CTYPE}"
+  for segment in segments/*.p9k; do
+    source "${segment}"
+  done
+
+  assertEquals 'my-locale' "${LC_CTYPE}"
 }
 
-function testLcCtypeIsSetCorrectlyInFlatMode() {
-  P9K_MODE="flat"
+function testLcCtypeIsNotOverwrittenInFlatMode() {
+  local P9K_MODE="flat"
+  local LC_CTYPE="my-locale"
+  local __P9K_DIRECTORY="${PWD}"
+  source functions/colors.zsh
+
   # Load Powerlevel9k
   source functions/icons.zsh
 
-  assertEquals 'en_US.UTF-8' "${LC_CTYPE}"
+  for segment in segments/*.p9k; do
+    source "${segment}"
+  done
+
+  assertEquals 'my-locale' "${LC_CTYPE}"
 }
 
-function testLcCtypeIsSetCorrectlyInCompatibleMode() {
-  P9K_MODE="compatible"
+function testLcCtypeIsNotOverwrittenInCompatibleMode() {
+  local P9K_MODE="compatible"
+  local LC_CTYPE="my-locale"
+  local __P9K_DIRECTORY="${PWD}"
+  source functions/colors.zsh
+
   # Load Powerlevel9k
   source functions/icons.zsh
 
-  assertEquals 'en_US.UTF-8' "${LC_CTYPE}"
+  for segment in segments/*.p9k; do
+    source "${segment}"
+  done
+
+  assertEquals 'my-locale' "${LC_CTYPE}"
 }
 
 # Go through all icons defined in default mode, and
@@ -77,7 +110,7 @@ function testLcCtypeIsSetCorrectlyInCompatibleMode() {
 function testAllIconsAreDefinedLikeInDefaultMode() {
   # Always compare against this mode
   local _P9K_TEST_MODE="default"
-  P9K_MODE="${_P9K_TEST_MODE}"
+  local P9K_MODE="${_P9K_TEST_MODE}"
   source functions/icons.zsh
   # _ICONS_UNDER_TEST is an array of just the keys of $icons.
   # We later check via (r) "subscript" flag that our key
@@ -86,7 +119,7 @@ function testAllIconsAreDefinedLikeInDefaultMode() {
   _ICONS_UNDER_TEST=(${(k)icons[@]})
 
   # Switch to "awesome-patched" mode
-  P9K_MODE="awesome-patched"
+  local P9K_MODE="awesome-patched"
   source functions/icons.zsh
   typeset -ah current_icons
   current_icons=(${(k)icons[@]})
@@ -105,7 +138,7 @@ function testAllIconsAreDefinedLikeInDefaultMode() {
   done
 
   # Switch to "awesome-fontconfig" mode
-  P9K_MODE="awesome-fontconfig"
+  local P9K_MODE="awesome-fontconfig"
   source functions/icons.zsh
   typeset -ah current_icons
   current_icons=(${(k)icons[@]})
@@ -114,7 +147,7 @@ function testAllIconsAreDefinedLikeInDefaultMode() {
   done
 
   # Switch to "nerdfont-fontconfig" mode
-  P9K_MODE="nerdfont-fontconfig"
+  local P9K_MODE="nerdfont-fontconfig"
   source functions/icons.zsh
   typeset -ah current_icons
   current_icons=(${(k)icons[@]})
@@ -123,7 +156,7 @@ function testAllIconsAreDefinedLikeInDefaultMode() {
   done
 
   # Switch to "flat" mode
-  P9K_MODE="flat"
+  local P9K_MODE="flat"
   source functions/icons.zsh
   typeset -ah current_icons
   current_icons=(${(k)icons[@]})
@@ -132,7 +165,7 @@ function testAllIconsAreDefinedLikeInDefaultMode() {
   done
 
   # Switch to "compatible" mode
-  P9K_MODE="compatible"
+  local P9K_MODE="compatible"
   source functions/icons.zsh
   typeset -ah current_icons
   current_icons=(${(k)icons[@]})
@@ -149,7 +182,7 @@ function testAllIconsAreDefinedLikeInDefaultMode() {
 function testAllIconsAreDefinedLikeInAwesomePatchedMode() {
   # Always compare against this mode
   local _P9K_TEST_MODE="awesome-patched"
-  P9K_MODE="$_P9K_TEST_MODE"
+  local P9K_MODE="$_P9K_TEST_MODE"
   source functions/icons.zsh
   # _ICONS_UNDER_TEST is an array of just the keys of $icons.
   # We later check via (r) "subscript" flag that our key
@@ -158,7 +191,7 @@ function testAllIconsAreDefinedLikeInAwesomePatchedMode() {
   _ICONS_UNDER_TEST=(${(k)icons[@]})
 
   # Switch to "default" mode
-  P9K_MODE="default"
+  local P9K_MODE="default"
   source functions/icons.zsh
   typeset -ah current_icons
   current_icons=(${(k)icons[@]})
@@ -177,7 +210,7 @@ function testAllIconsAreDefinedLikeInAwesomePatchedMode() {
   done
 
   # Switch to "awesome-fontconfig" mode
-  P9K_MODE="awesome-fontconfig"
+  local P9K_MODE="awesome-fontconfig"
   source functions/icons.zsh
   typeset -ah current_icons
   current_icons=(${(k)icons[@]})
@@ -186,7 +219,7 @@ function testAllIconsAreDefinedLikeInAwesomePatchedMode() {
   done
 
   # Switch to "nerdfont-fontconfig" mode
-  P9K_MODE="nerdfont-fontconfig"
+  local P9K_MODE="nerdfont-fontconfig"
   source functions/icons.zsh
   typeset -ah current_icons
   current_icons=(${(k)icons[@]})
@@ -195,7 +228,7 @@ function testAllIconsAreDefinedLikeInAwesomePatchedMode() {
   done
 
   # Switch to "flat" mode
-  P9K_MODE="flat"
+  local P9K_MODE="flat"
   source functions/icons.zsh
   typeset -ah current_icons
   current_icons=(${(k)icons[@]})
@@ -204,7 +237,7 @@ function testAllIconsAreDefinedLikeInAwesomePatchedMode() {
   done
 
   # Switch to "compatible" mode
-  P9K_MODE="compatible"
+  local P9K_MODE="compatible"
   source functions/icons.zsh
   typeset -ah current_icons
   current_icons=(${(k)icons[@]})
@@ -221,7 +254,7 @@ function testAllIconsAreDefinedLikeInAwesomePatchedMode() {
 function testAllIconsAreDefinedLikeInAwesomeFontconfigMode() {
   # Always compare against this mode
   local _P9K_TEST_MODE="awesome-fontconfig"
-  P9K_MODE="$_P9K_TEST_MODE"
+  local P9K_MODE="$_P9K_TEST_MODE"
   source functions/icons.zsh
   # _ICONS_UNDER_TEST is an array of just the keys of $icons.
   # We later check via (r) "subscript" flag that our key
@@ -230,7 +263,7 @@ function testAllIconsAreDefinedLikeInAwesomeFontconfigMode() {
   _ICONS_UNDER_TEST=(${(k)icons[@]})
 
   # Switch to "default" mode
-  P9K_MODE="default"
+  local P9K_MODE="default"
   source functions/icons.zsh
   typeset -ah current_icons
   current_icons=(${(k)icons[@]})
@@ -249,7 +282,7 @@ function testAllIconsAreDefinedLikeInAwesomeFontconfigMode() {
   done
 
   # Switch to "awesome-patched" mode
-  P9K_MODE="awesome-patched"
+  local P9K_MODE="awesome-patched"
   source functions/icons.zsh
   typeset -ah current_icons
   current_icons=(${(k)icons[@]})
@@ -258,7 +291,7 @@ function testAllIconsAreDefinedLikeInAwesomeFontconfigMode() {
   done
 
   # Switch to "nerdfont-fontconfig" mode
-  P9K_MODE="nerdfont-fontconfig"
+  local P9K_MODE="nerdfont-fontconfig"
   source functions/icons.zsh
   typeset -ah current_icons
   current_icons=(${(k)icons[@]})
@@ -267,7 +300,7 @@ function testAllIconsAreDefinedLikeInAwesomeFontconfigMode() {
   done
 
   # Switch to "flat" mode
-  P9K_MODE="flat"
+  local P9K_MODE="flat"
   source functions/icons.zsh
   typeset -ah current_icons
   current_icons=(${(k)icons[@]})
@@ -276,7 +309,7 @@ function testAllIconsAreDefinedLikeInAwesomeFontconfigMode() {
   done
 
   # Switch to "compatible" mode
-  P9K_MODE="compatible"
+  local P9K_MODE="compatible"
   source functions/icons.zsh
   typeset -ah current_icons
   current_icons=(${(k)icons[@]})
@@ -293,7 +326,7 @@ function testAllIconsAreDefinedLikeInAwesomeFontconfigMode() {
 function testAllIconsAreDefinedLikeInNerdfontFontconfigMode() {
   # Always compare against this mode
   local _P9K_TEST_MODE="nerdfont-fontconfig"
-  P9K_MODE="$_P9K_TEST_MODE"
+  local P9K_MODE="$_P9K_TEST_MODE"
   source functions/icons.zsh
   # _ICONS_UNDER_TEST is an array of just the keys of $icons.
   # We later check via (r) "subscript" flag that our key
@@ -302,7 +335,7 @@ function testAllIconsAreDefinedLikeInNerdfontFontconfigMode() {
   _ICONS_UNDER_TEST=(${(k)icons[@]})
 
   # Switch to "default" mode
-  P9K_MODE="default"
+  local P9K_MODE="default"
   source functions/icons.zsh
   typeset -ah current_icons
   current_icons=(${(k)icons[@]})
@@ -321,7 +354,7 @@ function testAllIconsAreDefinedLikeInNerdfontFontconfigMode() {
   done
 
   # Switch to "awesome-patched" mode
-  P9K_MODE="awesome-patched"
+  local P9K_MODE="awesome-patched"
   source functions/icons.zsh
   typeset -ah current_icons
   current_icons=(${(k)icons[@]})
@@ -330,7 +363,7 @@ function testAllIconsAreDefinedLikeInNerdfontFontconfigMode() {
   done
 
   # Switch to "awesome-fontconfig" mode
-  P9K_MODE="awesome-fontconfig"
+  local P9K_MODE="awesome-fontconfig"
   source functions/icons.zsh
   typeset -ah current_icons
   current_icons=(${(k)icons[@]})
@@ -339,7 +372,7 @@ function testAllIconsAreDefinedLikeInNerdfontFontconfigMode() {
   done
 
   # Switch to "flat" mode
-  P9K_MODE="flat"
+  local P9K_MODE="flat"
   source functions/icons.zsh
   typeset -ah current_icons
   current_icons=(${(k)icons[@]})
@@ -348,7 +381,7 @@ function testAllIconsAreDefinedLikeInNerdfontFontconfigMode() {
   done
 
   # Switch to "compatible" mode
-  P9K_MODE="compatible"
+  local P9K_MODE="compatible"
   source functions/icons.zsh
   typeset -ah current_icons
   current_icons=(${(k)icons[@]})
