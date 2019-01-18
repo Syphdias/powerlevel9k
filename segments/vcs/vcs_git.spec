@@ -5,79 +5,52 @@
 setopt shwordsplit
 SHUNIT_PARENT=$0
 
-function setUp() {
+function oneTimeSetUp() {
   export TERM="xterm-256color"
 
-  P9K_HOME=$(pwd)
-  ### Test specific
-  # Create default folder and git init it.
-  FOLDER=/tmp/powerlevel9k-test/vcs-test
-  mkdir -p "${FOLDER}"
-  cd $FOLDER
-  P9K_MODE=default
+  OLD_HOME="$HOME"
+  FOLDER="/tmp/powerlevel9k-test"
+  rm -rf "${FOLDER}"
+  mkdir "${FOLDER}"
 
   # Prevent the use of system or user specific gitconfig
-  OLD_HOME="$HOME"
-  HOME="${FOLDER:h}"
-  OLD_GIT_CONFIG_NOSYSTEM="$GIT_CONFIG_NOSYSTEM"
+  HOME="${FOLDER}"
+  OLD_GIT_CONFIG_NOSYSTEM="${GIT_CONFIG_NOSYSTEM}"
   GIT_CONFIG_NOSYSTEM=true
 
   # Set username and email
-  OLD_GIT_AUTHOR_NAME=$GIT_AUTHOR_NAME
-  GIT_AUTHOR_NAME="Testing Tester"
-  OLD_GIT_AUTHOR_EMAIL=$GIT_AUTHOR_EMAIL
-  GIT_AUTHOR_EMAIL="test@powerlevel9k.theme"
+  git config --global user.name "Testing Tester"
+  git config --global user.email "test@powerlevel9k.theme"
 
-  # Set default username if not already set!
-  if [[ -z $(git config user.name) ]]; then
-    GIT_AUTHOR_NAME_SET_BY_TEST=true
-    git config --global user.name "${GIT_AUTHOR_NAME}"
-  fi
-  # Set default email if not already set!
-  if [[ -z $(git config user.email) ]]; then
-    GIT_AUTHOR_EMAIL_SET_BY_TEST=true
-    git config --global user.email "${GIT_AUTHOR_EMAIL}"
-  fi
+  P9K_HOME="${PWD}"
+  P9K_MODE=default
+}
 
-  # Initialize FOLDER as git repository
+function setUp() {
+  # Create default folder and git init it.
+  mkdir -p "${FOLDER}/vcs-test"
+  cd "${FOLDER}/vcs-test"
+
+  # Initialize directory as git repository
   git init 1>/dev/null
 }
 
 function tearDown() {
-  if [[ -n "${OLD_GIT_AUTHOR_NAME}" ]]; then
-    GIT_AUTHOR_NAME=$OLD_GIT_AUTHOR
-    unset OLD_GIT_AUTHOR_NAME
-  else
-    unset GIT_AUTHOR_NAME
-  fi
-
-  if [[ -n "${OLD_GIT_AUTHOR_EMAIL}" ]]; then
-    GIT_AUTHOR_EMAIL=$OLD_GIT_AUTHOR_EMAIL
-    unset OLD_GIT_AUTHOR_EMAIL
-  else
-    unset GIT_AUTHOR_EMAIL
-  fi
-
-  if [[ "${GIT_AUTHOR_NAME_SET_BY_TEST}" == "true" ]]; then
-    git config --global --unset user.name
-  fi
-  if [[ "${GIT_AUTHOR_EMAIL_SET_BY_TEST}" == "true" ]]; then
-    git config --global --unset user.email
-  fi
-
-  # Back to original home and use
-  HOME="$OLD_HOME"
-  unset OLD_HOME
-  GIT_CONFIG_NOSYSTEM="$OLD_GIT_CONFIG_NOSYSTEM"
-  unset OLD_GIT_CONFIG_NOSYSTEM
-
   # Go back to powerlevel9k folder
   cd "${P9K_HOME}"
-  # Remove eventually created test-specific folder
-  rm -fr "${FOLDER}"
+
+  # Remove eventually created test-specific folder(s)
+  rm -fr "${FOLDER}"/*
+}
+
+function oneTimeTearDown() {
+  # Back to original home and use
+  HOME="${OLD_HOME}"
+  GIT_CONFIG_NOSYSTEM="${OLD_GIT_CONFIG_NOSYSTEM}"
+
   # At least remove test folder completely
-  rm -fr /tmp/powerlevel9k-test
-  unset FOLDER
+  rm -fr "${FOLDER}"
+  unset OLD_HOME OLD_GIT_CONFIG_NOSYSTEM FOLDER P9K_HOME P9K_MODE
 }
 
 function testColorOverridingForCleanStateWorks() {
