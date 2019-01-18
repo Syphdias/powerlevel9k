@@ -515,7 +515,7 @@ function prompt_powerlevel9k_setup() {
   add-zsh-hook preexec __p9k_preexec
 
   # hook into chpwd for bindkey support
-  chpwd_functions=(${chpwd_functions[@]} "__p9k_ch_pwd")
+  add-zsh-hook chpwd __p9k_ch_pwd
 
   zle -N __p9k_zle_keymap_select
 }
@@ -530,7 +530,7 @@ function prompt_powerlevel9k_teardown() {
   add-zsh-hook -D precmd __p9k\*
   add-zsh-hook -D preexec __p9k\*
   # unhook from chpwd
-  chpwd_functions=( "${chpwd_functions[@]//__p9k_ch_pwd/}" )
+  add-zsh-hook -D chpwd __p9k\*
   PROMPT='%m%# '
   RPROMPT=
 }
