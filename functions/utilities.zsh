@@ -347,12 +347,12 @@ function __p9k_print_deprecation_var_warning() {
 
 ###############################################################
 # @description
-#   Takes a list of variable names and returns the value of the 
+#   Takes a list of variable names and returns the value of the
 #   the first defined one, even if it's an empty string. Useful
-#   for cases when users can define variables that should take 
+#   for cases when users can define variables that should take
 #   priority even if they are empty.
 # @args
-#   $1 optional flag '-n' as first argument will make function to 
+#   $1 optional flag '-n' as first argument will make function to
 #   return variable name instead of it's value.
 #   $* List of variable names.
 # @returns
@@ -373,10 +373,10 @@ function p9k::find_first_defined() {
 
 ###############################################################
 # @description
-#   Takes a list of variable names and returns the value of the 
-#   the first non empty one. 
+#   Takes a list of variable names and returns the value of the
+#   the first non empty one.
 # @args
-#   $1 optional flag '-n' as first argument will make function to 
+#   $1 optional flag '-n' as first argument will make function to
 #   return variable name instead of it's value.
 #   $* List of variable names.
 # @returns
@@ -393,4 +393,20 @@ function p9k::find_first_non_empty() {
     fi
     shift
   done
+}
+
+# TODO: DON'T COMMIT! NO DOCS AND @dritters CODE!
+count_in_array() {
+  local needle="${1}"
+  # Explicitly split on whitespaces
+  local haystack=(${=2})
+  local count=0
+
+  for key in ${haystack}; do
+    if [[ "${key}" == "${needle}" ]]; then
+      count=$((count + 1))
+    fi
+  done
+
+  echo "${count}"
 }

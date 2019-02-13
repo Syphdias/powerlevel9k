@@ -108,7 +108,10 @@ function __p9k_left_prompt_segment() {
 # @noargs
 ##
 function __p9k_left_prompt_end() {
-  if [[ -n ${CURRENT_BG} ]]; then
+  if [[ "${(U)CURRENT_BG}" == "NONE" ]]; then
+    # TODO: Color?
+    echo -n "%k%f${P9K_MULTILINE_LAST_NEWLINE_PROMPT_SUFFIX_ICON}"
+  elif [[ -n ${CURRENT_BG} ]]; then
     echo -n "%k%F${CURRENT_BG#%K}${__P9K_ICONS[LEFT_SEGMENT_SEPARATOR]}"
   else
     echo -n "%k"
@@ -158,17 +161,21 @@ function __p9k_right_prompt_segment() {
   local right_ws="$__P9K_DATA[${last_right_element_stateful_name}_RIGHT_RIGHT_WHITESPACE]"
 
   # If CURRENT_RIGHT_BG is "NONE", we are the first right segment.
-  [[ ${CURRENT_RIGHT_BG} == 'NONE' ]] || echo -n "${right_ws}" # print right whitespace of prev segment
-  if [[ ${joined} == false ]] || [[ ${CURRENT_RIGHT_BG} == 'NONE' ]]; then
-    if [[ "${bg}" != "${CURRENT_RIGHT_BG}" ]]; then
-      # Use the new BG color for the foreground with separator
-      echo -n "%F${bg#%K}${__P9K_ICONS[RIGHT_SEGMENT_SEPARATOR]}"
-    else
-      # Middle segment with same color as previous segment
-      # We take the current foreground color as color for our
-      # subsegment. This should have enough contrast.
-      echo -n "${fg}${__P9K_ICONS[RIGHT_SUBSEGMENT_SEPARATOR]}"
+  if [[ ${CURRENT_RIGHT_BG} == 'NONE' ]]; then
+    if [[ ${joined} == false ]] || [[ ${CURRENT_RIGHT_BG} == 'NONE' ]]; then
+      # echo -n "$STATEFUL_NAME;:$CURRENT_RIGHT_BG:$bg:"
+      if [[ "${bg}" != "${CURRENT_RIGHT_BG}" ]]; then
+        # Use the new BG color for the foreground with separator
+        echo -n "%F${bg#%K}${__P9K_ICONS[RIGHT_SEGMENT_SEPARATOR]}"
+      else
+        # Middle segment with same color as previous segment
+        # We take the current foreground color as color for our
+        # subsegment. This should have enough contrast.
+        echo -n "${fg}${__P9K_ICONS[RIGHT_SUBSEGMENT_SEPARATOR]}"
+      fi
     fi
+  else
+    echo -n "${right_ws}" # print right whitespace of prev segment
   fi
 
   echo -n "${bg}${fg}"
@@ -297,6 +304,7 @@ function __p9k_build_left_prompt() {
     if [[ $element[0,7] =~ "custom_" ]]; then
       "__p9k_prompt_custom" "left" "$index" ${joined} $element[8,-1]
     else
+      # tmp_ps1=${tmp_ps1}$("prompt_$element" "left" "$index" $joined)
       "prompt_$element" "left" "$index" $joined
     fi
 
@@ -324,12 +332,14 @@ function __p9k_build_right_prompt() {
     # Remove joined information in direct calls
     element="${element%_joined}"
 
+    # [[ $element == newline ]] && echo -n "before_element"
     # Check if it is a custom command, otherwise interpet it as a prompt.
     if [[ $element[0,7] =~ "custom_" ]]; then
       "__p9k_prompt_custom" "right" "$index" ${joined} $element[8,-1]
     else
       "prompt_$element" "right" "$index" $joined
     fi
+    # [[ $element == newline ]] && echo -n "after_element"
 
     index=$((index + 1))
   done
@@ -386,29 +396,83 @@ function __p9k_prepare_prompts() {
 
   local LC_ALL="" LC_CTYPE="en_US.UTF-8" # Set the right locale to protect special characters
 
-  if [[ "${P9K_PROMPT_ON_NEWLINE:-}" == true ]]; then
-    __p9k_unsafe_PROMPT="${__P9K_ICONS[MULTILINE_FIRST_PROMPT_PREFIX]}%f%b%k$(__p9k_build_left_prompt)
-${__P9K_ICONS[MULTILINE_LAST_PROMPT_PREFIX]}"
-    if [[ "$P9K_RPROMPT_ON_NEWLINE" != true ]]; then
-      # The right prompt should be on the same line as the first line of the left
-      # prompt. To do so, there is just a quite ugly workaround: Before zsh draws
-      # the RPROMPT, we advise it, to go one line up. At the end of RPROMPT, we
-      # advise it to go one line down. See:
-      # http://superuser.com/questions/357107/zsh-right-justify-in-ps1
-      RPROMPT_PREFIX='%{'$'\e[1A''%}' # one line up
-      RPROMPT_SUFFIX='%{'$'\e[1B''%}' # one line down
-    else
-      RPROMPT_PREFIX=''
-      RPROMPT_SUFFIX=''
-    fi
-  else
-    __p9k_unsafe_PROMPT="%f%b%k$(__p9k_build_left_prompt)"
-    RPROMPT_PREFIX=''
-    RPROMPT_SUFFIX=''
+  # Determine how much steps we need to move cursor up to match left prompt
+  local RPROMPT_CURSOR_STEPS=$(count_in_array "newline" "${P9K_LEFT_PROMPT_ELEMENTS}")
+  RPROMPT_PREFIX=''
+  RPROMPT_SUFFIX=''
+  if [[ "${RPROMPT_CURSOR_STEPS}" -gt 0 ]]; then
+    # The right prompt should be on the same line as the first line of the left
+    # prompt. To do so, there is just a quite ugly workaround: Before zsh draws
+    # the RPROMPT, we advise it, to go one line up. At the end of RPROMPT, we
+    # advise it to go one line down. See:
+    # http://superuser.com/questions/357107/zsh-right-justify-in-ps1
+
+    # See http://tldp.org/HOWTO/Bash-Prompt-HOWTO/x361.html
+    RPROMPT_PREFIX='%{'$'\e['${RPROMPT_CURSOR_STEPS}'A''%}' # move X lines up
+    RPROMPT_SUFFIX='%{'$'\e['${RPROMPT_CURSOR_STEPS}'B''%}' # move X lines down
+  fi
+
+  __p9k_unsafe_PROMPT="%f%b%k$(__p9k_build_left_prompt)"
+
+  local -a __p9k_prompt_array
+  __p9k_prompt_array=(${(f)__p9k_unsafe_PROMPT})
+
+  # override __p9k_unsafe_PROMPT to fill in MULTILINE_*_PROMPT_PREFIXes
+  if [[ ${#__p9k_prompt_array} > 1 ]]; then
+    for i in {1..$#__p9k_prompt_array}; do
+      if [[ $i == 1 ]]; then
+        __p9k_unsafe_PROMPT="%f%b%k${__P9K_ICONS[MULTILINE_FIRST_PROMPT_PREFIX]}${__p9k_prompt_array[i]}"$'\n'
+      elif [[ $i < ${#__p9k_prompt_array} ]]; then
+        # TODO: rename to MULTILINE_MIDDLE_PROMPT_PREFIX or MULTILINE_CENTER_PROMPT_PREFIX?
+        __p9k_unsafe_PROMPT="${__p9k_unsafe_PROMPT}%f%b%k${__P9K_ICONS[MULTILINE_NEWLINE_PROMPT_PREFIX]}${__p9k_prompt_array[i]}"$'\n'
+      else
+        __p9k_unsafe_PROMPT="${__p9k_unsafe_PROMPT}%f%b%k${__P9K_ICONS[MULTILINE_LAST_PROMPT_PREFIX]}${__p9k_prompt_array[i]}"
+      fi
+    done
   fi
 
   if [[ "${P9K_DISABLE_RPROMPT:-}" != true ]]; then
-    __p9k_unsafe_RPROMPT="${RPROMPT_PREFIX}%f%b%k$(__p9k_build_right_prompt)%{${reset_color}%}${RPROMPT_SUFFIX}"
+    __p9k_unsafe_RPROMPT="%f%b%k$(__p9k_build_right_prompt)%{${reset_color}%}"
+#     __p9k_unsafe_RPROMPT="foo
+# 1234567890bar1234567890
+# 12345
+# 0987654321baz"
+
+    local -a __p9k_rprompt_array
+    __p9k_rprompt_array=( "${(f)__p9k_unsafe_RPROMPT}" )
+
+    if [[ ${#__p9k_rprompt_array} > 1 ]]; then
+      __p9k_unsafe_RPROMPT=''
+      # only count visible characters
+      # https://stackoverflow.com/questions/10564314/count-length-of-user-visible-string-for-zsh-prompt
+      local zero='%([BSUbfksu]|([FBK]|){*})'
+      local line_shift=0
+      # set -x
+      for i in {$#__p9k_rprompt_array..1}; do
+        # echo $__p9k_rprompt_array[i].
+
+        # echo i ${(S%%)__p9k_rprompt_array[i]//$~zero/} il ${#${(S%%)__p9k_rprompt_array[i]//$~zero/}}
+        # __p9k_unsafe_RPROMPT="${__p9k_rprompt_array[i]}""${__p9k_unsafe_RPROMPT}"
+        # __p9k_unsafe_RPROMPT="${__p9k_rprompt_array[i]}"'%{'$'\e[1B''%}'"${__p9k_unsafe_RPROMPT}"
+        [[ $i == ${#__p9k_rprompt_array} ]] \
+          && __p9k_unsafe_RPROMPT="${__p9k_rprompt_array[i]}"'%{'$'\e[1B''%}'"${__p9k_unsafe_RPROMPT}" \
+          || __p9k_unsafe_RPROMPT='%{'$'\e['${line_shift}'C''%}'"${__p9k_rprompt_array[i]}"'%{'$'\e['${line_shift}'D''%}''%{'$'\e[1B''%}'"${__p9k_unsafe_RPROMPT}"
+        # [[ $i == ${#__p9k_rprompt_array} ]] && line_shift=$((line_shift - 1 ))
+
+        # echo b $line_shift
+        # line_shift=$(($line_shift + 5))
+        line_shift=$(($line_shift + ${#${(S%%)__p9k_rprompt_array[i]//$~zero/}}))
+        # line_shift=$(($line_shift + ${#__p9k_rprompt_array[i]}))
+        # echo a $line_shift
+      done
+      # move up as much as we moved down (TODO: combine with RPROMPT_PREFIX depending on left prompt)
+      __p9k_unsafe_RPROMPT="${__p9k_unsafe_RPROMPT}%{"$'\e['"${#__p9k_rprompt_array}"'A''%}'
+    fi
+    echo $RPROMPT_CURSOR_STEPS ${#__p9k_rprompt_array}
+    # echo $__p9k_unsafe_RPROMPT |xxd
+    # set +x
+
+    __p9k_unsafe_RPROMPT="${RPROMPT_PREFIX}${__p9k_unsafe_RPROMPT}${RPROMPT_SUFFIX}"
     RPROMPT='$__p9k_unsafe_RPROMPT'
   fi
 

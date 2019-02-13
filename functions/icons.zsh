@@ -179,7 +179,7 @@ function p9k::register_segment() {
   #                                                    ├─                 ├─                  ├─                 ├─                  ├─
   p9k::register_icon "MULTILINE_NEWLINE_PROMPT_PREFIX"  $'\u251C'$'\u2500'  $'\u251C'$'\u2500'  $'\u251C'$'\u2500'  $'\u251C'$'\u2500'  $'\u251C'$'\u2500'
   #                                                    ╰─                 ╰─                  ╰─                 ╰─                  ╰─
-  p9k::register_icon "MULTILINE_LAST_PROMPT_PREFIX"     $'\u2570'$'\u2500 ' $'\u2570'$'\u2500 ' $'\u2570'$'\u2500 ' $'\u2570'$'\u2500 ' $'\u2570'$'\u2500 '
+  p9k::register_icon "MULTILINE_LAST_PROMPT_PREFIX"     $'\u2570'$'\u2500' $'\u2570'$'\u2500' $'\u2570'$'\u2500' $'\u2570'$'\u2500' $'\u2570'$'\u2500'
 
   # Override the above icon settings with any user-defined variables.
   case ${P9K_MODE} in

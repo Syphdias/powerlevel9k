@@ -17,13 +17,43 @@
 #   This is not an actual prompt segment, it is just a workaround to allow more newlines in your prompt.
 ##
 prompt_newline() {
-  [[ "$1" == "right" ]] && return
+  local placement="${(L)1}"
 
-  local newline=$'\n'
-  [[ "${P9K_PROMPT_ON_NEWLINE:-}" == true ]] \
-      && newline="${newline}${__P9K_ICONS[MULTILINE_NEWLINE_PROMPT_PREFIX]}"
+  if [[ "$placement" == "left" ]]; then
+    # On left prompt we just print a newline,
+    # as this sets the cursor position correctly.
+    local newline=$'\n'
+    newline="${newline}"
+  else
+    # On right prompt we cannot work with a
+    # newline because this would trigger ZSH's
+    # feature of hiding the right prompt
+    # (TRANSIENT_RPROMPT).
 
-  p9k::prepare_segment "$0" "" $1 "$2" $3 "${newline}" "[[ true ]]" "" "%k"
+    # TODO: Docs
+    local newline=$'\n'
+    newline="${newline}"
+  fi
+
+  p9k::prepare_segment "$0" "" $placement "$2" $3 "${newline}" "[[ true ]]" "" "%k"
   # Reset color variable, so that next segment starts as first
   CURRENT_BG="NONE"
+  CURRENT_RIGHT_BG="NONE"
 }
+
+
+  # local whitespaceVariableName="P9K_WHITESPACE_BETWEEN_${placement}_SEGMENTS"
+  # local WHITESPACE="${(P)whitespaceVariableName}"
+  # # TODO: DON'T COMMIT! this is for my shitty syntax highlighter "
+  #
+  # # if [[ "$P9K_PROMPT_ON_NEWLINE" == true ]]; then
+  # #   NEWLINE="${NEWLINE}$(print_icon 'MULTILINE_NEWLINE_PROMPT_PREFIX')"
+  # # fi
+  # unset P9K_WHITESPACE_BETWEEN_${placement}_SEGMENTS
+  # "$1_prompt_segment" "$0" "$2" "NONE" "NONE" "${NEWLINE}"
+  #
+  # if [[ "${placement}" == "left" ]]; then
+  #   P9K_WHITESPACE_BETWEEN_LEFT_SEGMENTS="${WHITESPACE}"
+  # else
+  #   P9K_WHITESPACE_BETWEEN_RIGHT_SEGMENTS="${WHITESPACE}"
+  # fi
